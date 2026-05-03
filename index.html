@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Darts 301" />
+  <title>🎯 Darts 301</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: #0d0f1a; overscroll-behavior: none; }
+    input, button { outline: none; font-family: Georgia, serif; }
+    @keyframes popIn {
+      0%   { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+    @keyframes burstIn {
+      0%   { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+      100% { transform: scale(1)   rotate(0deg);   opacity: 1; }
+    }
+    @keyframes spinWin {
+      0%   { transform: rotate(0deg)   scale(0.5); }
+      100% { transform: rotate(720deg) scale(1);   }
+    }
+    @keyframes fadeSlideUp {
+      0%   { transform: translateY(30px); opacity: 0; }
+      100% { transform: translateY(0);    opacity: 1; }
+    }
+    .pop-in   { animation: popIn       0.2s ease both; }
+    .bust-in  { animation: burstIn     0.3s ease both; }
+    .spin-win { animation: spinWin     1s   ease both; }
+    .slide-up { animation: fadeSlideUp 0.35s ease both; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+var useState    = React.useState;
+var useCallback = React.useCallback;
+var useEffect   = React.useEffect;
+
+/* ── Constantes ─────────────────────────────────────────────────────────── */
+var STARTING_SCORE = 301;
+var MAX_THROWS     = 3;
+var SEGMENTS       = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+var TEAM_COLORS    = ["#e84545","#4e9af1","#27c96f","#f5a623"];
+
+var C = {
+  bg:"#0d0f1a", surface:"#161928", card:"#1e2236", border:"#2a2f4a",
+  accent:"#f5a623", accentDim:"#b87d18",
+  green:"#27c96f", red:"#e84545", blue:"#4e9af1",
+  text:"#f0f2ff", muted:"#7b82a8",
+  dartRed:"#cc2222", dartGreen:"#1a6b3a", dartBlack:"#111", dartCream:"#f5f0e0"
+};
+
+/* ── Cible SVG ──────────────────────────────────────────────────────────── */
+function DartBoard(props) {
+  var onScore  = props.onScore;
+  var disabled = props.disabled;
+
+  var cx = 200, cy = 200;
+  var R = { bullseye:12, bull:28, innerSingle:96, triple:108, outerSingle:160, double:172, board:190 };
+  var SEG_ANGLE = 18;
+
+  function toRad(d) { return d * Math.PI / 180; }
+
+  function arcPath(r1, r2, startDeg, endDeg) {
+    var s  = toRad(startDeg - 90);
+    var e  = toRad(endDeg   - 90);
+    var x1 = cx + r1*Math.cos(s), y1 = cy + r1*Math.sin(s);
+    var x2 = cx + r2*Math.cos(s), y2 = cy + r2*Math.sin(s);
+    var x3 = cx + r2*Math.cos(e), y3 = cy + r2*Math.sin(e);
+    var x4 = cx + r1*Math.cos(e), y4 = cy + r1*Math.sin(e);
+    return "M"+x1+" "+y1+" A"+r1+" "+r1+" 0 0 1 "+x4+" "+y4
+         +" L"+x3+" "+y3+" A"+r2+" "+r2+" 0 0 0 "+x2+" "+y2+"Z";
+  }
+
+  function labelPos(r, deg) {
+    var rad = toRad(deg - 90);
+    return { x: cx + r*Math.cos(rad), y: cy + r*Math.sin(rad) };
+  }
+
+  var flashArr = useState(null);
+  var flash    = flashArr[0];
+  var setFlash = flashArr[1];
+
+  function hit(value, multiplier, zone) {
+    if (disabled) return;
+    setFlash(zone);
+    setTimeout(function() { setFlash(null); }, 350);
+    var lbl = multiplier === 3 ? "T"+value : multiplier === 2 ? "D"+value : ""+value;
+    onScore({ value:value, multiplier:multiplier, score:value*multiplier, label:lbl });
+  }
+
+  return (
+    <svg viewBox="0 0 400 400"
+      style={{ width:"100%", maxWidth:370, display:"block", margin:"0 auto",
+               filter:"drop-shadow(0 6px 24px #000b)", touchAction:"none" }}>
+      <circle cx={cx} cy={cy} r={R.board+8} fill="#1a1108"/>
+      <circle cx={cx} cy={cy} r={R.board}   fill="#0d0d0d"/>
+
+      {SEGMENTS.map(function(num, i) {
+        var startDeg = i*SEG_ANGLE - SEG_ANGLE/2;
+        var endDeg   = startDeg + SEG_ANGLE;
+        var even     = i % 2 === 0;
+        var base     = even ? C.dartBlack : C.dartCream;
+        var ring     = even ? C.dartRed   : C.dartGreen;
+        var zones = [
+          { r1:R.bull,        r2:R.innerSingle,  mult:1, col:base, zone:"s-"+num },
+          { r1:R.innerSingle, r2:R.triple,        mult:3, col:ring, zone:"t-"+num },
+          { r1:R.triple,      r2:R.outerSingle,   mult:1, col:base, zone:"o-"+num },
+          { r1:R.outerSingle, r2:R.double,        mult:2, col:ring, zone:"d-"+num }
+        ];
+        return zones.map(function(z) {
+          var hi = flash === z.zone;
+          return (
+            <path key={z.zone}
+              d={arcPath(z.r1, z.r2, startDeg, endDeg)}
+              fill={hi ? C.accent : z.col}
+              stroke="#1a1a1a" strokeWidth={0.6}
+              style={{ cursor: disabled ? "default" : "pointer", transition:"fill 0.12s" }}
+              onClick={function() { hit(num, z.mult, z.zone); }}
+            />
+          );
+        });
+      })}
+
+      {SEGMENTS.map(function(num, i) {
+        var pos = labelPos(R.board - 11, i * SEG_ANGLE);
+        return (
+          <text key={"n"+num} x={pos.x} y={pos.y}
+            textAnchor="middle" dominantBaseline="middle"
+            fontSize={11} fontWeight="bold" fill={C.dartCream} fontFamily="monospace"
+            style={{ pointerEvents:"none", userSelect:"none" }}>{num}</text>
+        );
+      })}
+
+      <circle cx={cx} cy={cy} r={R.bull}
+        fill={flash === "bull25" ? C.accent : C.dartGreen}
+        stroke="#333" strokeWidth={1}
+        style={{ cursor: disabled ? "default" : "pointer", transition:"fill 0.12s" }}
+        onClick={function() { hit(25, 1, "bull25"); }}
+      />
+      <circle cx={cx} cy={cy} r={R.bullseye}
+        fill={flash === "bull50" ? C.accent : C.dartRed}
+        stroke="#222" strokeWidth={1}
+        style={{ cursor: disabled ? "default" : "pointer", transition:"fill 0.12s" }}
+        onClick={function() { hit(50, 1, "bull50"); }}
+      />
+      <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle"
+        fontSize={8} fontWeight="bold" fill="#fff" fontFamily="monospace"
+        style={{ pointerEvents:"none", userSelect:"none" }}>50</text>
+
+      {disabled && (
+        <rect x={0} y={0} width={400} height={400}
+          fill="rgba(0,0,0,0.45)" style={{ cursor:"default" }}/>
+      )}
+    </svg>
+  );
+}
+
+/* ── Points de lancer ───────────────────────────────────────────────────── */
+function ThrowDots(props) {
+  var throws = props.throws;
+  var max    = props.max;
+  return (
+    <div style={{ display:"flex", gap:8 }}>
+      {Array.from({ length: max }).map(function(_, i) {
+        var t = throws[i];
+        return (
+          <div key={i} className={t ? "pop-in" : ""}
+            style={{
+              width:40, height:38, borderRadius:9,
+              background: t ? C.card : "transparent",
+              border: "2px solid "+(t ? C.accent : C.border),
+              display:"flex", alignItems:"center", justifyContent:"center",
+              color: t ? C.accent : C.muted,
+              fontSize: (t && t.label.length > 3) ? 10 : 12,
+              fontWeight:"bold"
+            }}>
+            {t ? t.label : ""}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Panneau des scores ─────────────────────────────────────────────────── */
+function ScorePanel(props) {
+  var teams      = props.teams;
+  var currentIdx = props.currentIdx;
+  return (
+    <div style={{ display:"flex", gap:8, width:"100%" }}>
+      {teams.map(function(team, i) {
+        var active = i === currentIdx;
+        var col    = TEAM_COLORS[i];
+        return (
+          <div key={team.id} style={{
+            flex:1, background: active ? C.card : C.surface,
+            border:"2px solid "+(active ? col : C.border),
+            borderRadius:12, padding:"10px 8px", textAlign:"center",
+            transition:"all 0.3s",
+            boxShadow: active ? "0 0 14px "+col+"44" : "none"
+          }}>
+            <div style={{ width:8,height:8,borderRadius:"50%",background:col,margin:"0 auto 5px" }}/>
+            <div style={{ color: active ? C.text : C.muted, fontSize:10, letterSpacing:1,
+                          textTransform:"uppercase", overflow:"hidden",
+                          textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>
+              {team.name}
+            </div>
+            <div style={{ color: active ? col : C.muted, fontSize:30, fontWeight:"bold",
+                          fontFamily:"monospace", lineHeight:1,
+                          textShadow: active ? "0 0 10px "+col+"88" : "none" }}>
+              {team.score}
+            </div>
+            {active && (
+              <div style={{ color:C.accent, fontSize:9, marginTop:3, letterSpacing:1 }}>▼ EN JEU</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Overlay Bust ───────────────────────────────────────────────────────── */
+function BustOverlay(props) {
+  var show   = props.show;
+  var onDone = props.onDone;
+  useEffect(function() {
+    if (show) {
+      var t = setTimeout(onDone, 1500);
+      return function() { clearTimeout(t); };
+    }
+  }, [show]);
+  if (!show) return null;
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(180,10,10,0.22)",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  zIndex:999, backdropFilter:"blur(3px)" }}>
+      <div className="bust-in"
+        style={{ background:C.red, borderRadius:24, padding:"28px 52px", textAlign:"center" }}>
+        <div style={{ fontSize:52 }}>💥</div>
+        <div style={{ color:"#fff", fontSize:34, fontWeight:"bold", letterSpacing:4 }}>BUST!</div>
+        <div style={{ color:"rgba(255,255,255,0.75)", fontSize:13, marginTop:6 }}>Tour annulé</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Modale de confirmation ─────────────────────────────────────────────── */
+function ConfirmModal(props) {
+  var team      = props.team;
+  var teamIdx   = props.teamIdx;
+  var throws    = props.throws;
+  var projected = props.projected;
+  var onConfirm = props.onConfirm;
+  var onCancel  = props.onCancel;
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.78)",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  zIndex:600, backdropFilter:"blur(4px)", padding:20 }}>
+      <div className="slide-up"
+        style={{ background:C.card, borderRadius:20, padding:26,
+                 width:"100%", maxWidth:340, border:"1px solid "+C.border }}>
+
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:18 }}>
+          <div style={{ width:10,height:10,borderRadius:"50%",background:TEAM_COLORS[teamIdx] }}/>
+          <div style={{ color:TEAM_COLORS[teamIdx], fontSize:14, fontWeight:"bold",
+                        letterSpacing:1, textTransform:"uppercase" }}>
+            {team.name}
+          </div>
+        </div>
+
+        <div style={{ color:C.muted, fontSize:11, letterSpacing:2,
+                      textTransform:"uppercase", marginBottom:10 }}>
+          Lancers du tour
+        </div>
+        <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:18 }}>
+          {throws.map(function(t, i) {
+            return (
+              <div key={i} style={{ flex:1, background:C.surface,
+                                    border:"1px solid "+C.border,
+                                    borderRadius:10, padding:"12px 6px", textAlign:"center" }}>
+                <div style={{ color:C.muted, fontSize:10, marginBottom:4 }}>{"#"+(i+1)}</div>
+                <div style={{ color:C.accent, fontSize:20, fontWeight:"bold",
+                              fontFamily:"monospace" }}>{t.label}</div>
+                <div style={{ color:C.muted, fontSize:11, marginTop:2 }}>{t.score+" pts"}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ background:C.surface, borderRadius:12, padding:"12px 16px",
+                      display:"flex", justifyContent:"space-between", alignItems:"center",
+                      marginBottom:20, border:"1px solid "+C.border }}>
+          <span style={{ color:C.muted, fontSize:13 }}>Score après ce tour</span>
+          <span style={{ color:C.green, fontSize:22, fontWeight:"bold", fontFamily:"monospace" }}>
+            {team.score+" → "+projected}
+          </span>
+        </div>
+
+        <div style={{ display:"flex", gap:10 }}>
+          <button onClick={onCancel}
+            style={{ flex:1, background:C.surface, border:"1px solid "+C.border,
+                     borderRadius:12, padding:"14px 0", color:C.text,
+                     fontSize:14, cursor:"pointer", fontFamily:"Georgia,serif" }}>
+            ↩ Corriger
+          </button>
+          <button onClick={onConfirm}
+            style={{ flex:1.5,
+                     background:"linear-gradient(135deg,"+C.green+",#1a9450)",
+                     border:"none", borderRadius:12, padding:"14px 0",
+                     color:"#fff", fontSize:14, fontWeight:"bold",
+                     cursor:"pointer", letterSpacing:1, fontFamily:"Georgia,serif",
+                     boxShadow:"0 4px 14px "+C.green+"55" }}>
+            ✓ Valider
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Historique ─────────────────────────────────────────────────────────── */
+function HistoryDrawer(props) {
+  var history = props.history;
+  var teams   = props.teams;
+  var onClose = props.onClose;
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.72)",
+                  zIndex:500, display:"flex", alignItems:"flex-end" }}
+         onClick={onClose}>
+      <div style={{ background:C.surface, borderRadius:"20px 20px 0 0", width:"100%",
+                    maxHeight:"72vh", padding:20, overflowY:"auto",
+                    border:"1px solid "+C.border }}
+           onClick={function(e) { e.stopPropagation(); }}>
+        <div style={{ display:"flex", justifyContent:"space-between",
+                      alignItems:"center", marginBottom:16 }}>
+          <h3 style={{ color:C.text, fontSize:15, letterSpacing:2, textTransform:"uppercase" }}>
+            Historique
+          </h3>
+          <button onClick={onClose}
+            style={{ background:"none", border:"none", color:C.muted,
+                     fontSize:22, cursor:"pointer" }}>✕</button>
+        </div>
+        {history.length === 0
+          ? <p style={{ color:C.muted, textAlign:"center", padding:20 }}>Aucun tour joué.</p>
+          : history.slice().reverse().map(function(e, i) {
+              var tIdx = -1;
+              for (var k=0; k<teams.length; k++) {
+                if (teams[k].id === e.teamId) { tIdx = k; break; }
+              }
+              var col = tIdx >= 0 ? TEAM_COLORS[tIdx] : C.accent;
+              return (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:10,
+                                      padding:"10px 0", borderBottom:"1px solid "+C.border }}>
+                  <div style={{ width:7,height:7,borderRadius:"50%",background:col,flexShrink:0 }}/>
+                  <div style={{ flex:1 }}>
+                    <div style={{ color:col, fontSize:12, fontWeight:"bold" }}>{e.teamName}</div>
+                    <div style={{ color:C.muted, fontSize:11, marginTop:2 }}>
+                      {e.throws.map(function(t) { return t.label; }).join(" · ")}
+                      {e.bust ? " 💥 BUST" : ""}
+                    </div>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ color: e.bust ? C.red : C.green, fontSize:14,
+                                  fontWeight:"bold", fontFamily:"monospace" }}>
+                      {e.bust ? "annulé" : "-"+e.total}
+                    </div>
+                    <div style={{ color:C.muted, fontSize:11 }}>
+                      {e.scoreBefore+" → "+e.scoreAfter}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+        }
+      </div>
+    </div>
+  );
+}
+
+/* ── Écran Victoire ─────────────────────────────────────────────────────── */
+function WinScreen(props) {
+  var winner    = props.winner;
+  var stats     = props.stats;
+  var onRestart = props.onRestart;
+  var onNewGame = props.onNewGame;
+  var avg = stats.totalThrows > 0
+    ? (STARTING_SCORE / stats.totalThrows * 3).toFixed(1) : "-";
+  var statItems = [
+    { l:"Tours joués",   v: stats.rounds },
+    { l:"Total lancers", v: stats.totalThrows },
+    { l:"Moy. / tour",   v: avg },
+    { l:"Meilleur tour", v: stats.bestTurn !== null ? stats.bestTurn : "-" }
+  ];
+  return (
+    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", flexDirection:"column",
+                  alignItems:"center", justifyContent:"center", padding:24,
+                  fontFamily:"Georgia,serif" }}>
+      <div className="spin-win" style={{ fontSize:76, marginBottom:12 }}>🎯</div>
+      <h1 className="slide-up"
+        style={{ color:C.accent, fontSize:30, fontWeight:"bold", letterSpacing:4,
+                 textAlign:"center", textShadow:"0 0 28px "+C.accent+"99", marginBottom:8 }}>
+        VICTOIRE !
+      </h1>
+      <p className="slide-up" style={{ color:C.text, fontSize:20, marginBottom:28 }}>
+        {winner.name}
+      </p>
+      <div className="slide-up"
+        style={{ background:C.surface, borderRadius:16, padding:22, width:"100%",
+                 maxWidth:360, border:"1px solid "+C.border, marginBottom:28 }}>
+        <h3 style={{ color:C.accent, fontSize:12, letterSpacing:2,
+                     textTransform:"uppercase", marginBottom:14 }}>Statistiques</h3>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+          {statItems.map(function(item) {
+            return (
+              <div key={item.l}
+                style={{ background:C.card, borderRadius:10, padding:"12px 10px", textAlign:"center" }}>
+                <div style={{ color:C.muted, fontSize:10, letterSpacing:1, marginBottom:4 }}>{item.l}</div>
+                <div style={{ color:C.text, fontSize:22, fontWeight:"bold",
+                              fontFamily:"monospace" }}>{item.v}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ display:"flex", gap:12, flexWrap:"wrap", justifyContent:"center" }}>
+        <button onClick={onRestart}
+          style={{ background:C.card, border:"1px solid "+C.border, borderRadius:12,
+                   padding:"14px 28px", color:C.text, fontSize:15, cursor:"pointer",
+                   letterSpacing:1, fontFamily:"Georgia,serif" }}>
+          🔄 Rejouer
+        </button>
+        <button onClick={onNewGame}
+          style={{ background:"linear-gradient(135deg,"+C.accent+","+C.accentDim+")",
+                   border:"none", borderRadius:12, padding:"14px 28px",
+                   color:"#000", fontSize:15, fontWeight:"bold", cursor:"pointer",
+                   letterSpacing:1, fontFamily:"Georgia,serif" }}>
+          Nouvelle partie →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Écran de configuration ─────────────────────────────────────────────── */
+function SetupScreen(props) {
+  var onStart = props.onStart;
+
+  var t1 = useState([{ id:1, name:"Équipe Rouge" }, { id:2, name:"Équipe Bleue" }]);
+  var teams    = t1[0];
+  var setTeams = t1[1];
+
+  var t2 = useState(3);
+  var nextId    = t2[0];
+  var setNextId = t2[1];
+
+  function addTeam() {
+    if (teams.length >= 4) return;
+    var nid = nextId;
+    setTeams(function(arr) { return arr.concat([{ id:nid, name:"Équipe "+nid }]); });
+    setNextId(function(n) { return n+1; });
+  }
+  function removeTeam(id) {
+    if (teams.length <= 2) return;
+    setTeams(function(arr) { return arr.filter(function(x) { return x.id !== id; }); });
+  }
+  function updateName(id, name) {
+    setTeams(function(arr) {
+      return arr.map(function(x) {
+        return x.id === id ? { id:x.id, name:name } : x;
+      });
+    });
+  }
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", flexDirection:"column",
+                  alignItems:"center", justifyContent:"center", padding:20,
+                  fontFamily:"Georgia,serif" }}>
+
+      <div style={{ marginBottom:28, textAlign:"center" }}>
+        <div style={{ fontSize:60, marginBottom:8 }}>🎯</div>
+        <h1 style={{ color:C.accent, fontSize:34, fontWeight:"bold", letterSpacing:4, margin:0,
+                     textTransform:"uppercase", textShadow:"0 0 18px "+C.accent+"77" }}>
+          DARTS 301
+        </h1>
+        <p style={{ color:C.muted, marginTop:4, letterSpacing:2, fontSize:12 }}>
+          JEU DE FLÉCHETTES
+        </p>
+      </div>
+
+      <div style={{ width:"100%", maxWidth:400, background:C.surface, borderRadius:16,
+                    padding:22, border:"1px solid "+C.border, marginBottom:16 }}>
+        <h2 style={{ color:C.text, fontSize:15, marginBottom:14, letterSpacing:2,
+                     textTransform:"uppercase" }}>
+          {"Équipes ("+teams.length+")"}
+        </h2>
+        {teams.map(function(team, i) {
+          return (
+            <div key={team.id} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+              <div style={{ width:10,height:10,borderRadius:"50%",
+                            background:TEAM_COLORS[i], flexShrink:0 }}/>
+              <input value={team.name}
+                onChange={function(e) { updateName(team.id, e.target.value); }}
+                style={{ flex:1, background:C.card, border:"1px solid "+C.border,
+                         borderRadius:8, padding:"10px 12px", color:C.text,
+                         fontSize:15, fontFamily:"Georgia,serif" }}
+              />
+              {teams.length > 2 && (
+                <button onClick={function() { removeTeam(team.id); }}
+                  style={{ background:"none", border:"none", color:C.muted,
+                           fontSize:20, cursor:"pointer", padding:"0 4px" }}>✕</button>
+              )}
+            </div>
+          );
+        })}
+        {teams.length < 4 && (
+          <button onClick={addTeam}
+            style={{ width:"100%", marginTop:6, background:C.card,
+                     border:"1px dashed "+C.border, borderRadius:8,
+                     padding:"10px 12px", color:C.muted, fontSize:13,
+                     cursor:"pointer", letterSpacing:1, fontFamily:"Georgia,serif" }}>
+            + Ajouter une équipe
+          </button>
+        )}
+      </div>
+
+      <div style={{ width:"100%", maxWidth:400, background:C.surface, borderRadius:16,
+                    padding:18, border:"1px solid "+C.border, marginBottom:24 }}>
+        <h3 style={{ color:C.accent, fontSize:12, marginBottom:10, letterSpacing:2,
+                     textTransform:"uppercase" }}>Règles 301</h3>
+        <div style={{ color:C.muted, fontSize:13, lineHeight:1.8 }}>
+          <div>{"• Départ à "}<strong style={{color:C.text}}>301 points</strong>{" par équipe"}</div>
+          <div>{"• "}<strong style={{color:C.text}}>3 lancers</strong>{" par tour"}</div>
+          <div>{"• Atteindre "}<strong style={{color:C.green}}>exactement 0</strong>{" pour gagner"}</div>
+          <div>{"• Dépasser 0 = "}<strong style={{color:C.red}}>Bust !</strong>{" (tour annulé)"}</div>
+        </div>
+      </div>
+
+      <button onClick={function() { onStart(teams); }}
+        style={{ background:"linear-gradient(135deg,"+C.accent+","+C.accentDim+")",
+                 border:"none", borderRadius:14, padding:"18px 56px",
+                 color:"#000", fontSize:17, fontWeight:"bold", cursor:"pointer",
+                 letterSpacing:3, textTransform:"uppercase",
+                 boxShadow:"0 4px 18px "+C.accent+"55", fontFamily:"Georgia,serif" }}>
+        Jouer !
+      </button>
+    </div>
+  );
+}
+
+/* ── Écran de jeu ───────────────────────────────────────────────────────── */
+function GameScreen(props) {
+  var initialTeams = props.initialTeams;
+  var onNewGame    = props.onNewGame;
+
+  var s1 = useState(initialTeams.map(function(t) { return { id:t.id, name:t.name, score:STARTING_SCORE }; }));
+  var teams    = s1[0];
+  var setTeams = s1[1];
+
+  var s2 = useState(0);
+  var currentIdx    = s2[0];
+  var setCurrentIdx = s2[1];
+
+  var s3 = useState([]);
+  var throws    = s3[0];
+  var setThrows = s3[1];
+
+  var s4 = useState([]);
+  var history    = s4[0];
+  var setHistory = s4[1];
+
+  var s5 = useState(false);
+  var bust    = s5[0];
+  var setBust = s5[1];
+
+  var s6 = useState(null);
+  var bustPending    = s6[0];
+  var setBustPending = s6[1];
+
+  var s7 = useState(null);
+  var winner    = s7[0];
+  var setWinner = s7[1];
+
+  var s8 = useState(false);
+  var showHistory    = s8[0];
+  var setShowHistory = s8[1];
+
+  var s9 = useState(false);
+  var showConfirm    = s9[0];
+  var setShowConfirm = s9[1];
+
+  var s10 = useState({ rounds:0, totalThrows:0, bestTurn:null });
+  var stats    = s10[0];
+  var setStats = s10[1];
+
+  var team       = teams[currentIdx];
+  var roundTotal = throws.reduce(function(s,t) { return s + t.score; }, 0);
+  var projected  = team.score - roundTotal;
+
+  function commitTurn(th, isWin) {
+    var total   = th.reduce(function(s,t) { return s + t.score; }, 0);
+    var ns      = team.score - total;
+    var updated = teams.map(function(t) {
+      if (t.id === team.id) { return { id:t.id, name:t.name, score: ns < 0 ? 0 : ns }; }
+      return t;
+    });
+    setTeams(updated);
+    setHistory(function(h) {
+      return h.concat([{
+        teamId:team.id, teamName:team.name,
+        throws:th, total:total, bust:false,
+        scoreBefore:team.score, scoreAfter:ns
+      }]);
+    });
+    setStats(function(s) {
+      var best = s.bestTurn === null ? total : (total > s.bestTurn ? total : s.bestTurn);
+      return { rounds:s.rounds+1, totalThrows:s.totalThrows+th.length, bestTurn:best };
+    });
+    setThrows([]);
+    if (isWin) {
+      setWinner(team);
+    } else {
+      setCurrentIdx(function(i) { return (i+1) % teams.length; });
+    }
+  }
+
+  function handleScore(throwData) {
+    if (throws.length >= MAX_THROWS) return;
+    var newThrows = throws.concat([throwData]);
+    setThrows(newThrows);
+    var total = newThrows.reduce(function(s,t) { return s + t.score; }, 0);
+    var ns    = team.score - total;
+    if (ns < 0) {
+      setBustPending(newThrows);
+      setBust(true);
+    } else if (ns === 0) {
+      commitTurn(newThrows, true);
+    }
+    // 3 lancers sans bust ni victoire → on attend le bouton de confirmation
+  }
+
+  function handleBustDone() {
+    setBust(false);
+    var bp = bustPending || [];
+    setHistory(function(h) {
+      return h.concat([{
+        teamId:team.id, teamName:team.name,
+        throws:bp, total:0, bust:true,
+        scoreBefore:team.score, scoreAfter:team.score
+      }]);
+    });
+    setStats(function(s) {
+      return { rounds:s.rounds+1, totalThrows:s.totalThrows+bp.length, bestTurn:s.bestTurn };
+    });
+    setBustPending(null);
+    setThrows([]);
+    setCurrentIdx(function(i) { return (i+1) % teams.length; });
+  }
+
+  function undoLast() {
+    if (throws.length > 0 && !bust) {
+      setThrows(function(t) { return t.slice(0, t.length-1); });
+    }
+  }
+
+  function handleValidateTurn() {
+    if (throws.length === 0) {
+      setCurrentIdx(function(i) { return (i+1) % teams.length; });
+      return;
+    }
+    if (throws.length >= MAX_THROWS) {
+      setShowConfirm(true);
+    } else {
+      commitTurn(throws, false);
+    }
+  }
+
+  function handleConfirm() {
+    setShowConfirm(false);
+    commitTurn(throws, false);
+  }
+
+  function resetGame() {
+    setTeams(initialTeams.map(function(t) { return { id:t.id, name:t.name, score:STARTING_SCORE }; }));
+    setCurrentIdx(0);
+    setThrows([]);
+    setHistory([]);
+    setWinner(null);
+    setStats({ rounds:0, totalThrows:0, bestTurn:null });
+  }
+
+  if (winner) {
+    return (
+      <WinScreen winner={winner} stats={stats}
+        onRestart={resetGame} onNewGame={onNewGame} />
+    );
+  }
+
+  var boardDisabled = throws.length >= MAX_THROWS || bust;
+  var canUndo       = throws.length > 0 && !bust;
+  var turnComplete  = throws.length >= MAX_THROWS && !bust;
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", flexDirection:"column",
+                  fontFamily:"Georgia,serif",
+                  paddingBottom:"env(safe-area-inset-bottom, 16px)" }}>
+
+      <div style={{ background:C.surface, borderBottom:"1px solid "+C.border,
+                    padding:"12px 16px",
+                    paddingTop:"max(12px, env(safe-area-inset-top, 12px))",
+                    display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <button onClick={onNewGame}
+          style={{ background:"none", border:"none", color:C.muted,
+                   fontSize:13, cursor:"pointer", letterSpacing:1 }}>
+          ✕ Quitter
+        </button>
+        <div style={{ color:C.accent, fontSize:16, fontWeight:"bold", letterSpacing:3,
+                      textTransform:"uppercase", textShadow:"0 0 10px "+C.accent+"77" }}>
+          🎯 DARTS 301
+        </div>
+        <button onClick={function() { setShowHistory(true); }}
+          style={{ background:"none", border:"none", color:C.muted, fontSize:13, cursor:"pointer" }}>
+          Historique
+        </button>
+      </div>
+
+      <div style={{ flex:1, padding:"12px 14px", display:"flex",
+                    flexDirection:"column", gap:10, overflow:"hidden" }}>
+
+        <ScorePanel teams={teams} currentIdx={currentIdx} />
+
+        <div style={{ background:C.surface, borderRadius:13, padding:"12px 14px",
+                      border:"1px solid "+C.border }}>
+          <div style={{ display:"flex", justifyContent:"space-between",
+                        alignItems:"center", marginBottom:8 }}>
+            <div>
+              <div style={{ color:TEAM_COLORS[currentIdx], fontSize:13, fontWeight:"bold",
+                            letterSpacing:1, textTransform:"uppercase" }}>
+                {team.name}
+              </div>
+              <div style={{ color:C.muted, fontSize:11, marginTop:1 }}>
+                {"Lancer "+throws.length+"/"+MAX_THROWS}
+                {turnComplete && (
+                  <span style={{ color:C.accent, marginLeft:6 }}>✓ Prêt à valider</span>
+                )}
+              </div>
+            </div>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ color: projected < 0 ? C.red : projected === 0 ? C.green : C.text,
+                            fontSize:26, fontWeight:"bold", fontFamily:"monospace",
+                            transition:"color 0.2s" }}>
+                {projected < 0 ? "BUST!" : projected}
+              </div>
+              {roundTotal > 0 && projected >= 0 && (
+                <div style={{ color:C.accent, fontSize:11 }}>{"−"+roundTotal+" pts"}</div>
+              )}
+            </div>
+          </div>
+          <ThrowDots throws={throws} max={MAX_THROWS} />
+        </div>
+
+        <div style={{ flex:1, display:"flex", alignItems:"center", minHeight:0 }}>
+          <DartBoard onScore={handleScore} disabled={boardDisabled} />
+        </div>
+
+        {!boardDisabled && (
+          <button onClick={function() { handleScore({ value:0, multiplier:1, score:0, label:"0" }); }}
+            style={{ width:"100%", background:C.surface,
+                     border:"1px solid "+C.border, borderRadius:12,
+                     padding:"11px 0", color:C.muted,
+                     fontSize:14, cursor:"pointer", letterSpacing:2,
+                     fontFamily:"Georgia,serif" }}>
+            🎯 Raté — 0 point
+          </button>
+        )}
+
+        <div style={{ display:"flex", gap:10 }}>
+          <button onClick={undoLast} disabled={!canUndo}
+            style={{ flex:1, background: canUndo ? C.card : C.surface,
+                     border:"1px solid "+C.border, borderRadius:12,
+                     padding:"14px 0", color: canUndo ? C.text : C.muted,
+                     fontSize:14, cursor: canUndo ? "pointer" : "default",
+                     letterSpacing:1, fontFamily:"Georgia,serif", transition:"all 0.2s" }}>
+            ↩ Annuler
+          </button>
+          <button onClick={handleValidateTurn}
+            style={{ flex:1.6,
+                     background: turnComplete
+                       ? "linear-gradient(135deg,"+C.green+",#1a9450)"
+                       : "linear-gradient(135deg,"+C.accent+"cc,"+C.accentDim+")",
+                     border:"none", borderRadius:12, padding:"14px 0",
+                     color: turnComplete ? "#fff" : "#000",
+                     fontSize:14, fontWeight:"bold", cursor:"pointer",
+                     letterSpacing:1, fontFamily:"Georgia,serif",
+                     boxShadow: turnComplete ? "0 0 16px "+C.green+"55" : "none",
+                     transition:"all 0.3s" }}>
+            {turnComplete ? "✓ Confirmer →" : "Valider tour →"}
+          </button>
+        </div>
+      </div>
+
+      <BustOverlay show={bust} onDone={handleBustDone} />
+
+      {showConfirm && (
+        <ConfirmModal
+          team={team}
+          teamIdx={currentIdx}
+          throws={throws}
+          projected={projected}
+          onConfirm={handleConfirm}
+          onCancel={function() { setShowConfirm(false); }}
+        />
+      )}
+
+      {showHistory && (
+        <HistoryDrawer history={history} teams={teams}
+          onClose={function() { setShowHistory(false); }} />
+      )}
+    </div>
+  );
+}
+
+/* ── Racine ─────────────────────────────────────────────────────────────── */
+function App() {
+  var s1 = useState("setup");
+  var screen    = s1[0];
+  var setScreen = s1[1];
+
+  var s2 = useState(null);
+  var gameTeams    = s2[0];
+  var setGameTeams = s2[1];
+
+  if (screen === "setup") {
+    return (
+      <SetupScreen onStart={function(teams) {
+        setGameTeams(teams);
+        setScreen("game");
+      }} />
+    );
+  }
+  return (
+    <GameScreen
+      initialTeams={gameTeams}
+      onNewGame={function() { setGameTeams(null); setScreen("setup"); }}
+    />
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App, null));
+</script>
+</body>
+</html>
