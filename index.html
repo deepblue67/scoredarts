@@ -12,6 +12,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <style>
+
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     body{overscroll-behavior:none}
     input,button{outline:none;font-family:Georgia,serif}
@@ -23,21 +24,73 @@
     .bust-in {animation:burstIn .3s ease both}
     .spin-win{animation:spinWin 1s  ease both}
     .slide-up{animation:slideUp .35s ease both}
-    @media(min-width:768px) and (max-width:1024px) and (orientation:portrait){
-      .dartboard-svg{max-width:580px!important}
+
+    /* ── iPhone portrait : défaut ── */
+    .dartboard-svg { max-width:370px }
+
+    /* ── iPad portrait ── */
+    @media (min-width:768px) and (max-width:1024px) and (orientation:portrait){
+      .dartboard-svg{max-width:580px}
     }
-    @media(min-width:1024px) and (orientation:landscape){
-      .dartboard-svg{max-width:500px!important}
-      .game-layout{flex-direction:row!important;align-items:flex-start!important;gap:16px!important}
-      .game-left{flex:0 0 520px!important;display:flex;flex-direction:column;gap:10px}
-      .game-right{flex:1!important;display:flex;flex-direction:column;gap:10px}
+
+    /* ── iPad paysage : cible occupe toute la droite ── */
+    @media (min-width:1024px) and (orientation:landscape){
+      .game-layout{
+        flex-direction:row !important;
+        align-items:stretch !important;
+        overflow:hidden !important;
+        padding:0 !important;
+        gap:0 !important;
+      }
+      .game-left{
+        flex:0 0 360px !important;
+        overflow-y:auto !important;
+        padding:12px 14px !important;
+        border-right:1px solid #2a2f4a;
+        gap:10px;
+      }
+      .game-right{
+        flex:1 !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:12px !important;
+      }
+      .dartboard-svg{
+        max-width:min(calc(100vw - 400px), calc(100vh - 80px)) !important;
+        width:100% !important;
+      }
     }
-    @media(max-height:430px) and (orientation:landscape){
-      .dartboard-svg{max-width:240px!important}
-      .game-layout{flex-direction:row!important;align-items:flex-start!important;gap:8px!important;padding:8px 10px!important}
-      .game-left{flex:0 0 250px!important;display:flex;flex-direction:column;gap:6px}
-      .game-right{flex:1!important;display:flex;flex-direction:column;gap:6px}
+
+    /* ── iPhone paysage ── */
+    @media (max-height:430px) and (orientation:landscape){
+      .game-layout{
+        flex-direction:row !important;
+        align-items:stretch !important;
+        overflow:hidden !important;
+        padding:0 !important;
+        gap:0 !important;
+      }
+      .game-left{
+        flex:0 0 260px !important;
+        overflow-y:auto !important;
+        padding:8px 10px !important;
+        border-right:1px solid #2a2f4a;
+        gap:6px;
+      }
+      .game-right{
+        flex:1 !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:6px !important;
+      }
+      .dartboard-svg{
+        max-width:min(calc(100vw - 280px), calc(100vh - 20px)) !important;
+        width:100% !important;
+      }
     }
+
   </style>
 </head>
 <body>
@@ -47,10 +100,9 @@
 var useState  = React.useState;
 var useEffect = React.useEffect;
 
-/* ══ CONSTANTES ═══════════════════════════════════════════════════ */
 var MAX_THROWS      = 3;
 var SEGMENTS        = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
-var CRICKET_SECTORS = [20,19,18,17,16,15,25]; /* 25 = Bull */
+var CRICKET_SECTORS = [20,19,18,17,16,15,25];
 var TEAM_COLORS     = ["#e84545","#4e9af1","#27c96f","#f5a623","#b44fff","#ff7c2a","#00cec9","#fd79a8"];
 var SAVE_KEY        = "darts_game";
 var HISTORY_KEY     = "darts_history";
@@ -58,57 +110,39 @@ var TEAMS_KEY       = "darts_teams";
 var THEME_KEY       = "darts_theme";
 
 var CHECKOUT = {
-  170:"T20 T20 Bull",169:"T20 T19 Bull",167:"T20 T19 Bull",
-  164:"T20 T18 Bull",163:"T20 T17 Bull",161:"T20 T17 Bull",
-  160:"T20 T20 D20",158:"T20 T20 D19",157:"T20 T19 D20",
-  156:"T20 T20 D18",155:"T20 T19 D19",154:"T20 T18 D20",
-  153:"T20 T19 D18",152:"T20 T20 D16",151:"T20 T17 D20",
-  150:"T20 T18 D18",149:"T20 T19 D16",148:"T20 T16 D20",
-  147:"T20 T17 D18",146:"T20 T18 D16",145:"T20 T15 D20",
-  144:"T20 T20 D12",143:"T20 T17 D16",142:"T20 T14 D20",
-  141:"T20 T19 D12",140:"T20 T16 D16",139:"T20 T13 D20",
-  138:"T20 T18 D12",137:"T20 T15 D16",136:"T20 T20 D8",
-  135:"T20 T17 D12",134:"T20 T14 D16",133:"T20 T19 D8",
-  132:"T20 T16 D12",131:"T20 T13 D16",130:"T20 T20 D5",
-  129:"T19 T16 D12",128:"T20 T12 D16",127:"T20 T17 D8",
-  126:"T19 T19 D6", 125:"T20 T15 D10",124:"T20 T14 D8",
-  123:"T19 T16 D6", 122:"T18 T18 D7", 121:"T20 T11 D8",
-  120:"T20 S20 D20",119:"T19 T12 D6", 118:"T20 S18 D20",
-  117:"T20 S17 D20",116:"T20 S16 D20",115:"T20 S15 D20",
-  114:"T20 S14 D20",113:"T20 S13 D20",112:"T20 S12 D20",
-  111:"T20 S11 D20",110:"T20 S10 D20",109:"T20 S9 D20",
-  108:"T20 S8 D20", 107:"T19 S10 D20",106:"T20 S6 D20",
-  105:"T20 S5 D20", 104:"T20 S4 D20", 103:"T20 S3 D20",
-  102:"T20 S2 D20", 101:"T20 S1 D20", 100:"T20 D20",
-  99:"T19 S10 D16", 98:"T20 D19",     97:"T19 D20",
-  96:"T20 D18",     95:"T19 D19",     94:"T18 D20",
-  93:"T19 D18",     92:"T20 D16",     91:"T17 D20",
-  90:"T18 D18",     89:"T19 D16",     88:"T20 D14",
-  87:"T17 D18",     86:"T18 D16",     85:"T15 D20",
-  84:"T20 D12",     83:"T17 D16",     82:"T14 D20",
-  81:"T19 D12",     80:"T20 D10",     79:"T13 D20",
-  78:"T18 D12",     77:"T19 D10",     76:"T20 D8",
-  75:"T17 D12",     74:"T14 D16",     73:"T19 D8",
-  72:"T16 D12",     71:"T13 D16",     70:"T18 D8",
-  69:"T19 D6",      68:"T20 D4",      67:"T17 D8",
-  66:"T10 D18",     65:"T19 D4",      64:"T16 D8",
-  63:"T13 D12",     62:"T10 D16",     61:"T15 D8",
-  60:"S20 D20",     59:"S19 D20",     58:"S18 D20",
-  57:"S17 D20",     56:"S16 D20",     55:"S15 D20",
-  54:"S14 D20",     53:"S13 D20",     52:"S12 D20",
-  51:"S11 D20",     50:"Bull",        49:"S17 D16",
-  48:"S16 D16",     47:"S15 D16",     46:"S14 D16",
-  45:"S13 D16",     44:"S12 D16",     43:"S11 D16",
-  42:"S10 D16",     41:"S9 D16",      40:"D20",
-  38:"D19",         36:"D18",         34:"D17",
-  32:"D16",         30:"D15",         28:"D14",
-  26:"D13",         24:"D12",         22:"D11",
-  20:"D10",         18:"D9",          16:"D8",
-  14:"D7",          12:"D6",          10:"D5",
-  8:"D4",           6:"D3",           4:"D2",   2:"D1"
+  170:"T20 T20 Bull",169:"T20 T19 Bull",167:"T20 T19 Bull",164:"T20 T18 Bull",
+  163:"T20 T17 Bull",161:"T20 T17 Bull",160:"T20 T20 D20",158:"T20 T20 D19",
+  157:"T20 T19 D20",156:"T20 T20 D18",155:"T20 T19 D19",154:"T20 T18 D20",
+  153:"T20 T19 D18",152:"T20 T20 D16",151:"T20 T17 D20",150:"T20 T18 D18",
+  149:"T20 T19 D16",148:"T20 T16 D20",147:"T20 T17 D18",146:"T20 T18 D16",
+  145:"T20 T15 D20",144:"T20 T20 D12",143:"T20 T17 D16",142:"T20 T14 D20",
+  141:"T20 T19 D12",140:"T20 T16 D16",139:"T20 T13 D20",138:"T20 T18 D12",
+  137:"T20 T15 D16",136:"T20 T20 D8",135:"T20 T17 D12",134:"T20 T14 D16",
+  133:"T20 T19 D8",132:"T20 T16 D12",131:"T20 T13 D16",130:"T20 T20 D5",
+  129:"T19 T16 D12",128:"T20 T12 D16",127:"T20 T17 D8",126:"T19 T19 D6",
+  125:"T20 T15 D10",124:"T20 T14 D8",123:"T19 T16 D6",122:"T18 T18 D7",
+  121:"T20 T11 D8",120:"T20 S20 D20",119:"T19 T12 D6",118:"T20 S18 D20",
+  117:"T20 S17 D20",116:"T20 S16 D20",115:"T20 S15 D20",114:"T20 S14 D20",
+  113:"T20 S13 D20",112:"T20 S12 D20",111:"T20 S11 D20",110:"T20 S10 D20",
+  109:"T20 S9 D20",108:"T20 S8 D20",107:"T19 S10 D20",106:"T20 S6 D20",
+  105:"T20 S5 D20",104:"T20 S4 D20",103:"T20 S3 D20",102:"T20 S2 D20",
+  101:"T20 S1 D20",100:"T20 D20",99:"T19 S10 D16",98:"T20 D19",97:"T19 D20",
+  96:"T20 D18",95:"T19 D19",94:"T18 D20",93:"T19 D18",92:"T20 D16",
+  91:"T17 D20",90:"T18 D18",89:"T19 D16",88:"T20 D14",87:"T17 D18",
+  86:"T18 D16",85:"T15 D20",84:"T20 D12",83:"T17 D16",82:"T14 D20",
+  81:"T19 D12",80:"T20 D10",79:"T13 D20",78:"T18 D12",77:"T19 D10",
+  76:"T20 D8",75:"T17 D12",74:"T14 D16",73:"T19 D8",72:"T16 D12",
+  71:"T13 D16",70:"T18 D8",69:"T19 D6",68:"T20 D4",67:"T17 D8",
+  66:"T10 D18",65:"T19 D4",64:"T16 D8",63:"T13 D12",62:"T10 D16",
+  61:"T15 D8",60:"S20 D20",59:"S19 D20",58:"S18 D20",57:"S17 D20",
+  56:"S16 D20",55:"S15 D20",54:"S14 D20",53:"S13 D20",52:"S12 D20",
+  51:"S11 D20",50:"Bull",49:"S17 D16",48:"S16 D16",47:"S15 D16",
+  46:"S14 D16",45:"S13 D16",44:"S12 D16",43:"S11 D16",42:"S10 D16",
+  41:"S9 D16",40:"D20",38:"D19",36:"D18",34:"D17",32:"D16",30:"D15",
+  28:"D14",26:"D13",24:"D12",22:"D11",20:"D10",18:"D9",16:"D8",
+  14:"D7",12:"D6",10:"D5",8:"D4",6:"D3",4:"D2",2:"D1"
 };
 
-/* ══ THÈME ════════════════════════════════════════════════════════ */
 function makeTheme(dark){
   return dark?{
     bg:"#0d0f1a",surface:"#161928",card:"#1e2236",border:"#2a2f4a",
@@ -123,15 +157,14 @@ function makeTheme(dark){
   };
 }
 
-/* ══ STORAGE ══════════════════════════════════════════════════════ */
 function ls_get(k){try{var r=localStorage.getItem(k);return r?JSON.parse(r):null;}catch(e){return null;}}
 function ls_set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function ls_del(k){try{localStorage.removeItem(k);}catch(e){}}
 
-/* ══ DARTBOARD SVG ════════════════════════════════════════════════ */
+/* ══ DARTBOARD ═══════════════════════════════════════════════════ */
 function DartBoard(props){
-  var onScore=props.onScore,disabled=props.disabled,C=props.C;
-  var highlightSectors=props.highlightSectors||null; /* pour Cricket */
+  var onScore=props.onScore, disabled=props.disabled, C=props.C;
+  var highlightSectors=props.highlightSectors||null;
   var cx=200,cy=200;
   var R={bullseye:12,bull:28,innerSingle:96,triple:108,outerSingle:160,double:172,board:190};
   var SEG=18;
@@ -152,21 +185,20 @@ function DartBoard(props){
     var lbl=m===3?"T"+v:m===2?"D"+v:v===25?"Bull":v===50?"Bull":""+v;
     onScore({value:v,multiplier:m,score:v*m,label:lbl,isDouble:m===2,isBull:(v===50||v===25)});
   }
-  /* Opacité réduite pour les secteurs non-Cricket */
-  function sectorOpacity(num){
-    if(!highlightSectors) return 1;
+  function op(num){
+    if(!highlightSectors)return 1;
     return highlightSectors.indexOf(num)>=0?1:0.25;
   }
   return(
     <svg viewBox="0 0 400 400" className="dartboard-svg"
-      style={{width:"100%",maxWidth:370,display:"block",margin:"0 auto",
+      style={{width:"100%",display:"block",margin:"0 auto",
         filter:"drop-shadow(0 6px 24px #000b)",touchAction:"none"}}>
       <circle cx={cx} cy={cy} r={R.board+8} fill="#1a1108"/>
       <circle cx={cx} cy={cy} r={R.board} fill="#0d0d0d"/>
       {SEGMENTS.map(function(num,i){
         var sd=i*SEG-SEG/2,ed=sd+SEG;
         var ev=i%2===0,base=ev?C.dartBlack:C.dartCream,ring=ev?C.dartRed:C.dartGreen;
-        var op=sectorOpacity(num);
+        var o=op(num);
         var zones=[
           {r1:R.bull,r2:R.innerSingle,m:1,c:base,z:"s-"+num},
           {r1:R.innerSingle,r2:R.triple,m:3,c:ring,z:"t-"+num},
@@ -175,27 +207,23 @@ function DartBoard(props){
         ];
         return zones.map(function(z){
           return(<path key={z.z} d={arc(z.r1,z.r2,sd,ed)}
-            fill={flash===z.z?C.accent:z.c} stroke="#1a1a1a" strokeWidth={0.6}
-            opacity={op}
+            fill={flash===z.z?C.accent:z.c} stroke="#1a1a1a" strokeWidth={0.6} opacity={o}
             style={{cursor:disabled?"default":"pointer",transition:"fill 0.12s"}}
             onClick={function(){hit(num,z.m,z.z);}}/>);
         });
       })}
       {SEGMENTS.map(function(num,i){
         var p=lp(R.board-11,i*SEG);
-        var op=sectorOpacity(num);
         return(<text key={"n"+num} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle"
-          fontSize={11} fontWeight="bold" fill={C.dartCream} fontFamily="monospace" opacity={op}
+          fontSize={11} fontWeight="bold" fill={C.dartCream} fontFamily="monospace" opacity={op(num)}
           style={{pointerEvents:"none",userSelect:"none"}}>{num}</text>);
       })}
-      <circle cx={cx} cy={cy} r={R.bull}
-        fill={flash==="bull25"?C.accent:C.dartGreen} stroke="#333" strokeWidth={1}
-        opacity={sectorOpacity(25)}
+      <circle cx={cx} cy={cy} r={R.bull} fill={flash==="bull25"?C.accent:C.dartGreen}
+        stroke="#333" strokeWidth={1} opacity={op(25)}
         style={{cursor:disabled?"default":"pointer",transition:"fill 0.12s"}}
         onClick={function(){hit(25,1,"bull25");}}/>
-      <circle cx={cx} cy={cy} r={R.bullseye}
-        fill={flash==="bull50"?C.accent:C.dartRed} stroke="#222" strokeWidth={1}
-        opacity={sectorOpacity(25)}
+      <circle cx={cx} cy={cy} r={R.bullseye} fill={flash==="bull50"?C.accent:C.dartRed}
+        stroke="#222" strokeWidth={1} opacity={op(25)}
         style={{cursor:disabled?"default":"pointer",transition:"fill 0.12s"}}
         onClick={function(){hit(50,1,"bull50");}}/>
       <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle"
@@ -206,7 +234,7 @@ function DartBoard(props){
   );
 }
 
-/* ══ THROW DOTS ═══════════════════════════════════════════════════ */
+/* ══ THROW DOTS ══════════════════════════════════════════════════ */
 function ThrowDots(props){
   var throws=props.throws,max=props.max,C=props.C;
   return(
@@ -227,7 +255,7 @@ function ThrowDots(props){
   );
 }
 
-/* ══ SCORE PANEL (301/501) ════════════════════════════════════════ */
+/* ══ SCORE PANEL ═════════════════════════════════════════════════ */
 function ScorePanel(props){
   var teams=props.teams,currentIdx=props.currentIdx,C=props.C;
   var many=teams.length>4;
@@ -258,89 +286,62 @@ function ScorePanel(props){
   );
 }
 
-/* ══ CRICKET BOARD PANEL ══════════════════════════════════════════ */
+/* ══ CRICKET PANEL ═══════════════════════════════════════════════ */
 function CricketPanel(props){
-  var teams=props.teams,currentIdx=props.currentIdx,cricketState=props.cricketState,C=props.C;
-  var sectors=CRICKET_SECTORS; /* [20,19,18,17,16,15,25] */
-
-  function hitsIcon(n){
-    if(n===0) return "";
-    if(n===1) return "/";
-    if(n===2) return "X";
-    return "⊗"; /* fermé */
+  var teams=props.teams,currentIdx=props.currentIdx,cs=props.cricketState,C=props.C;
+  function hIcon(n){
+    if(n===0)return"";if(n===1)return"/";if(n===2)return"X";return"⊗";
   }
-
   return(
     <div style={{background:C.surface,borderRadius:12,border:"1px solid "+C.border,overflow:"hidden"}}>
-      {/* Header colonnes */}
       <div style={{display:"grid",gridTemplateColumns:"1fr repeat("+teams.length+",1fr) 1fr",
         background:C.card,padding:"6px 8px",gap:4}}>
         <div style={{color:C.muted,fontSize:10,textAlign:"center",letterSpacing:1}}>SEC</div>
         {teams.map(function(t,i){
           var active=i===currentIdx;
-          return(
-            <div key={t.id} style={{color:active?TEAM_COLORS[i]:C.muted,fontSize:10,
-              textAlign:"center",letterSpacing:1,fontWeight:active?"bold":"normal",
-              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-              {t.name}
-            </div>
-          );
+          return(<div key={t.id} style={{color:active?TEAM_COLORS[i]:C.muted,fontSize:10,
+            textAlign:"center",letterSpacing:1,fontWeight:active?"bold":"normal",
+            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.name}</div>);
         })}
-        <div style={{color:C.muted,fontSize:10,textAlign:"center",letterSpacing:1}}>PTS</div>
+        <div style={{color:C.muted,fontSize:10,textAlign:"center"}}>PTS</div>
       </div>
-
-      {sectors.map(function(sec){
+      {CRICKET_SECTORS.map(function(sec){
         var label=sec===25?"Bull":""+sec;
         return(
           <div key={sec} style={{display:"grid",
             gridTemplateColumns:"1fr repeat("+teams.length+",1fr) 1fr",
-            padding:"5px 8px",gap:4,
-            borderBottom:"1px solid "+C.border+"88"}}>
-            <div style={{color:C.text,fontSize:13,fontWeight:"bold",
-              textAlign:"center",fontFamily:"monospace"}}>{label}</div>
+            padding:"5px 8px",gap:4,borderBottom:"1px solid "+C.border+"88"}}>
+            <div style={{color:C.text,fontSize:13,fontWeight:"bold",textAlign:"center",fontFamily:"monospace"}}>{label}</div>
             {teams.map(function(t,i){
-              var hits=(cricketState[t.id]&&cricketState[t.id][sec])||0;
-              var closed=hits>=3;
-              var active=i===currentIdx;
-              return(
-                <div key={t.id} style={{textAlign:"center",
-                  color:closed?TEAM_COLORS[i]:active?C.text:C.muted,
-                  fontSize:closed?16:14,fontWeight:"bold",
-                  textShadow:closed?"0 0 8px "+TEAM_COLORS[i]+"88":"none"}}>
-                  {hitsIcon(hits)}
-                </div>
-              );
+              var hits=(cs[t.id]&&cs[t.id][sec])||0,closed=hits>=3,active=i===currentIdx;
+              return(<div key={t.id} style={{textAlign:"center",
+                color:closed?TEAM_COLORS[i]:active?C.text:C.muted,
+                fontSize:closed?16:14,fontWeight:"bold",
+                textShadow:closed?"0 0 8px "+TEAM_COLORS[i]+"88":"none"}}>
+                {hIcon(hits)}
+              </div>);
             })}
-            {/* Points par secteur (somme par équipe) */}
             <div style={{display:"flex",justifyContent:"center",gap:4}}>
               {teams.map(function(t,i){
-                var pts=(cricketState[t.id]&&cricketState[t.id]["pts_"+sec])||0;
-                return pts>0?(
-                  <span key={t.id} style={{color:TEAM_COLORS[i],fontSize:11,
-                    fontFamily:"monospace",fontWeight:"bold"}}>{pts}</span>
-                ):null;
+                var pts=(cs[t.id]&&cs[t.id]["pts_"+sec])||0;
+                return pts>0?(<span key={t.id} style={{color:TEAM_COLORS[i],fontSize:11,
+                  fontFamily:"monospace",fontWeight:"bold"}}>{pts}</span>):null;
               })}
             </div>
           </div>
         );
       })}
-
-      {/* Scores totaux */}
       <div style={{display:"grid",gridTemplateColumns:"1fr repeat("+teams.length+",1fr) 1fr",
         padding:"8px 8px",background:C.card,gap:4}}>
         <div style={{color:C.muted,fontSize:10,textAlign:"center"}}>TOT</div>
         {teams.map(function(t,i){
           var active=i===currentIdx;
-          var total=Object.keys(cricketState[t.id]||{}).reduce(function(s,k){
-            return k.indexOf("pts_")===0?s+(cricketState[t.id][k]||0):s;
+          var total=Object.keys(cs[t.id]||{}).reduce(function(s,k){
+            return k.indexOf("pts_")===0?s+(cs[t.id][k]||0):s;
           },0);
-          return(
-            <div key={t.id} style={{color:active?TEAM_COLORS[i]:C.muted,
-              fontSize:16,fontWeight:"bold",textAlign:"center",fontFamily:"monospace",
-              textShadow:active?"0 0 8px "+TEAM_COLORS[i]+"88":"none"}}>
-              {total}
-            </div>
-          );
+          return(<div key={t.id} style={{color:active?TEAM_COLORS[i]:C.muted,
+            fontSize:16,fontWeight:"bold",textAlign:"center",fontFamily:"monospace",
+            textShadow:active?"0 0 8px "+TEAM_COLORS[i]+"88":"none"}}>{total}</div>);
         })}
         <div/>
       </div>
@@ -348,7 +349,7 @@ function CricketPanel(props){
   );
 }
 
-/* ══ MODALES COMMUNES ═════════════════════════════════════════════ */
+/* ══ MODALES ═════════════════════════════════════════════════════ */
 function BustOverlay(props){
   var show=props.show,onDone=props.onDone,C=props.C;
   useEffect(function(){if(show){var t=setTimeout(onDone,1500);return function(){clearTimeout(t);};};},[show]);
@@ -416,8 +417,7 @@ function ConfirmModal(props){
           })}
         </div>
         <div style={{background:C.surface,borderRadius:12,padding:"12px 16px",display:"flex",
-          justifyContent:"space-between",alignItems:"center",marginBottom:20,
-          border:"1px solid "+C.border}}>
+          justifyContent:"space-between",alignItems:"center",marginBottom:20,border:"1px solid "+C.border}}>
           <span style={{color:C.muted,fontSize:13}}>Score après ce tour</span>
           <span style={{color:C.green,fontSize:22,fontWeight:"bold",fontFamily:"monospace"}}>
             {team.score+" → "+projected}
@@ -483,7 +483,7 @@ function HistoryDrawer(props){
   );
 }
 
-/* ══ STATS SCREEN ═════════════════════════════════════════════════ */
+/* ══ STATS SCREEN ════════════════════════════════════════════════ */
 function StatsScreen(props){
   var onClose=props.onClose,C=props.C;
   var games=ls_get(HISTORY_KEY)||[];
@@ -519,12 +519,10 @@ function StatsScreen(props){
                   {l:"301/501",v:games.filter(function(g){return g.gameType!=="cricket";}).length},
                   {l:"Cricket",v:games.filter(function(g){return g.gameType==="cricket";}).length}
                 ].map(function(item){
-                  return(
-                    <div key={item.l} style={{background:C.card,borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
-                      <div style={{color:C.muted,fontSize:10,letterSpacing:1,marginBottom:4}}>{item.l}</div>
-                      <div style={{color:C.text,fontSize:20,fontWeight:"bold",fontFamily:"monospace"}}>{item.v}</div>
-                    </div>
-                  );
+                  return(<div key={item.l} style={{background:C.card,borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+                    <div style={{color:C.muted,fontSize:10,letterSpacing:1,marginBottom:4}}>{item.l}</div>
+                    <div style={{color:C.text,fontSize:20,fontWeight:"bold",fontFamily:"monospace"}}>{item.v}</div>
+                  </div>);
                 })}
               </div>
             </div>
@@ -540,12 +538,10 @@ function StatsScreen(props){
                     <div style={{display:"flex",gap:6}}>
                       <div style={{color:C.accent,fontSize:11,fontWeight:"bold",
                         background:C.card,padding:"3px 10px",borderRadius:20}}>
-                        {game.gameType==="cricket"?"🏏 Cricket":
-                          game.gameType==="501"?"🎯 501":"🎯 301"}
+                        {game.gameType==="cricket"?"🏏 Cricket":game.gameType==="501"?"🎯 501":"🎯 301"}
                       </div>
                       {game.rule&&game.gameType!=="cricket"&&(
-                        <div style={{color:C.muted,fontSize:11,background:C.card,
-                          padding:"3px 10px",borderRadius:20}}>
+                        <div style={{color:C.muted,fontSize:11,background:C.card,padding:"3px 10px",borderRadius:20}}>
                           {game.rule==="doubleout"?"D.Out":"Simple"}
                         </div>
                       )}
@@ -577,8 +573,7 @@ function StatsScreen(props){
             })}
             <button onClick={function(){if(window.confirm("Effacer tout l'historique ?")){ls_del(HISTORY_KEY);onClose();}}}
               style={{width:"100%",marginTop:8,background:"none",border:"1px solid "+C.red,
-                borderRadius:10,padding:"12px 0",color:C.red,fontSize:13,cursor:"pointer",
-                fontFamily:"Georgia,serif"}}>
+                borderRadius:10,padding:"12px 0",color:C.red,fontSize:13,cursor:"pointer",fontFamily:"Georgia,serif"}}>
               🗑 Effacer l'historique
             </button>
           </div>
@@ -588,18 +583,22 @@ function StatsScreen(props){
   );
 }
 
-/* ══ WIN SCREEN ═══════════════════════════════════════════════════ */
+/* ══ WIN SCREEN ══════════════════════════════════════════════════ */
 function WinScreen(props){
   var winner=props.winner,stats=props.stats,gameType=props.gameType;
   var onRestart=props.onRestart,onNewGame=props.onNewGame,onSameTeams=props.onSameTeams,C=props.C;
-  var showAvg=gameType!=="cricket";
-  var avg=stats.totalThrows>0?((gameType==="501"?501:301)/stats.totalThrows*3).toFixed(1):"-";
+  var avg=stats.totalThrows>0&&gameType!=="cricket"?
+    ((gameType==="501"?501:301)/stats.totalThrows*3).toFixed(1):"-";
+  var items=[
+    {l:"Tours joués",v:stats.rounds},
+    {l:"Total lancers",v:stats.totalThrows},
+    {l:"Moy. / tour",v:avg},
+    {l:"Meilleur tour",v:stats.bestTurn!==null?stats.bestTurn:"-"}
+  ];
   return(
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",
       alignItems:"center",justifyContent:"center",padding:24,fontFamily:"Georgia,serif"}}>
-      <div className="spin-win" style={{fontSize:76,marginBottom:12}}>
-        {gameType==="cricket"?"🏏":"🎯"}
-      </div>
+      <div className="spin-win" style={{fontSize:76,marginBottom:12}}>{gameType==="cricket"?"🏏":"🎯"}</div>
       <h1 className="slide-up" style={{color:C.accent,fontSize:30,fontWeight:"bold",letterSpacing:4,
         textAlign:"center",textShadow:"0 0 28px "+C.accent+"99",marginBottom:8}}>VICTOIRE !</h1>
       <p className="slide-up" style={{color:C.text,fontSize:20,marginBottom:28}}>{winner.name}</p>
@@ -609,18 +608,11 @@ function WinScreen(props){
           Statistiques
         </h3>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {[
-            {l:"Tours joués",v:stats.rounds},
-            {l:"Total lancers",v:stats.totalThrows},
-            showAvg?{l:"Moy. / tour",v:avg}:{l:"Meilleur tour",v:stats.bestTurn||"-"},
-            {l:"Meilleur tour",v:stats.bestTurn!==null?stats.bestTurn:"-"}
-          ].map(function(item,ii){
-            return(
-              <div key={ii} style={{background:C.card,borderRadius:10,padding:"12px 10px",textAlign:"center"}}>
-                <div style={{color:C.muted,fontSize:10,letterSpacing:1,marginBottom:4}}>{item.l}</div>
-                <div style={{color:C.text,fontSize:22,fontWeight:"bold",fontFamily:"monospace"}}>{item.v}</div>
-              </div>
-            );
+          {items.map(function(item,ii){
+            return(<div key={ii} style={{background:C.card,borderRadius:10,padding:"12px 10px",textAlign:"center"}}>
+              <div style={{color:C.muted,fontSize:10,letterSpacing:1,marginBottom:4}}>{item.l}</div>
+              <div style={{color:C.text,fontSize:22,fontWeight:"bold",fontFamily:"monospace"}}>{item.v}</div>
+            </div>);
           })}
         </div>
       </div>
@@ -649,7 +641,7 @@ function WinScreen(props){
   );
 }
 
-/* ══ HOME SCREEN ══════════════════════════════════════════════════ */
+/* ══ HOME SCREEN ═════════════════════════════════════════════════ */
 function HomeScreen(props){
   var onSelect=props.onSelect,C=props.C,darkMode=props.darkMode,setDarkMode=props.setDarkMode;
   var onShowStats=props.onShowStats;
@@ -661,14 +653,11 @@ function HomeScreen(props){
   return(
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",
       alignItems:"center",justifyContent:"center",padding:20,fontFamily:"Georgia,serif"}}>
-      {/* Boutons thème + stats */}
       <div style={{position:"absolute",top:"max(16px,env(safe-area-inset-top,16px))",
         right:16,display:"flex",gap:8}}>
         <button onClick={onShowStats}
           style={{background:C.card,border:"1px solid "+C.border,borderRadius:20,
-            padding:"6px 14px",color:C.muted,fontSize:14,cursor:"pointer"}}>
-          📊
-        </button>
+            padding:"6px 14px",color:C.muted,fontSize:14,cursor:"pointer"}}>📊</button>
         <button onClick={function(){setDarkMode(!darkMode);ls_set(THEME_KEY,!darkMode);}}
           style={{background:C.card,border:"1px solid "+C.border,borderRadius:20,
             padding:"6px 14px",color:C.text,fontSize:16,cursor:"pointer"}}>
@@ -689,8 +678,7 @@ function HomeScreen(props){
             <button key={g.key} onClick={function(){onSelect(g.key);}}
               style={{background:C.surface,border:"1px solid "+C.border,borderRadius:16,
                 padding:"20px 24px",cursor:"pointer",textAlign:"left",
-                display:"flex",alignItems:"center",gap:16,
-                transition:"all 0.2s",fontFamily:"Georgia,serif"}}>
+                display:"flex",alignItems:"center",gap:16,transition:"all 0.2s",fontFamily:"Georgia,serif"}}>
               <div style={{fontSize:36,flexShrink:0}}>{g.icon}</div>
               <div style={{flex:1}}>
                 <div style={{color:C.text,fontSize:20,fontWeight:"bold",letterSpacing:2}}>{g.title}</div>
@@ -705,13 +693,14 @@ function HomeScreen(props){
   );
 }
 
-/* ══ SETUP SCREEN ═════════════════════════════════════════════════ */
+/* ══ SETUP SCREEN ════════════════════════════════════════════════ */
 function SetupScreen(props){
   var onStart=props.onStart,onBack=props.onBack,gameType=props.gameType,C=props.C;
   var is301or501=gameType==="301"||gameType==="501";
   var savedTeams=ls_get(TEAMS_KEY)||[{id:1,name:"Équipe Rouge"},{id:2,name:"Équipe Bleue"}];
+  var initNextId=savedTeams.reduce(function(m,t){return t.id>m?t.id:m;},0)+1;
   var tA=useState(savedTeams);var teams=tA[0],setTeams=tA[1];
-  var tB=useState(3);var nextId=tB[0],setNextId=tB[1];
+  var tB=useState(initNextId);var nextId=tB[0],setNextId=tB[1];
   var tC=useState("simple");var rule=tC[0],setRule=tC[1];
 
   function addTeam(){
@@ -730,7 +719,6 @@ function SetupScreen(props){
   function handleStart(){ls_set(TEAMS_KEY,teams);onStart(teams,rule);}
 
   var gameLabel=gameType==="cricket"?"🏏 Cricket":"🎯 "+gameType;
-
   return(
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",
       alignItems:"center",justifyContent:"center",padding:20,fontFamily:"Georgia,serif"}}>
@@ -752,7 +740,57 @@ function SetupScreen(props){
         </h2>
         {teams.map(function(team,i){
           return(
-            <div key={team.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <div key={team.id}
+              draggable={true}
+              onDragStart={function(e){e.dataTransfer.setData("dragId",""+team.id);}}
+              onDragOver={function(e){e.preventDefault();}}
+              onDrop={function(e){
+                e.preventDefault();
+                var fromId=parseInt(e.dataTransfer.getData("dragId"));
+                if(fromId===team.id)return;
+                setTeams(function(arr){
+                  var from=arr.findIndex(function(x){return x.id===fromId;});
+                  var to=arr.findIndex(function(x){return x.id===team.id;});
+                  var next=arr.slice();
+                  var moved=next.splice(from,1)[0];
+                  next.splice(to,0,moved);
+                  return next;
+                });
+              }}
+              onTouchStart={function(e){
+                var el=e.currentTarget;
+                el._startY=e.touches[0].clientY;
+                el._startIdx=i;
+              }}
+              onTouchMove={function(e){
+                e.preventDefault();
+                var dy=e.touches[0].clientY-e.currentTarget._startY;
+                e.currentTarget.style.transform="translateY("+dy+"px)";
+                e.currentTarget.style.opacity="0.7";
+                e.currentTarget.style.zIndex="10";
+              }}
+              onTouchEnd={function(e){
+                var el=e.currentTarget;
+                el.style.transform="";el.style.opacity="1";el.style.zIndex="";
+                var dy=e.changedTouches[0].clientY-el._startY;
+                var rowH=(el.offsetHeight||58)+10;
+                var steps=Math.round(dy/rowH);
+                if(steps===0)return;
+                setTeams(function(arr){
+                  var from=arr.findIndex(function(x){return x.id===team.id;});
+                  var to=Math.max(0,Math.min(arr.length-1,from+steps));
+                  if(from===to)return arr;
+                  var next=arr.slice();
+                  var moved=next.splice(from,1)[0];
+                  next.splice(to,0,moved);
+                  return next;
+                });
+              }}
+              style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,
+                transition:"opacity 0.15s",userSelect:"none",WebkitUserSelect:"none",
+                position:"relative"}}>
+              <div style={{color:C.muted,fontSize:20,cursor:"grab",flexShrink:0,
+                padding:"0 2px",touchAction:"none"}}>⠿</div>
               <div style={{width:10,height:10,borderRadius:"50%",background:TEAM_COLORS[i],flexShrink:0}}/>
               <input value={team.name}
                 onChange={function(e){updateName(team.id,e.target.value);}}
@@ -760,7 +798,8 @@ function SetupScreen(props){
                   padding:"10px 12px",color:C.text,fontSize:15,fontFamily:"Georgia,serif"}}/>
               {teams.length>2&&
                 <button onClick={function(){removeTeam(team.id);}}
-                  style={{background:"none",border:"none",color:C.muted,fontSize:20,cursor:"pointer",padding:"0 4px"}}>✕</button>
+                  style={{background:"none",border:"none",color:C.muted,fontSize:20,
+                    cursor:"pointer",padding:"0 4px"}}>✕</button>
               }
             </div>
           );
@@ -784,18 +823,13 @@ function SetupScreen(props){
             {[{val:"simple",label:"Simple out",desc:"Terminer à exactement 0"},
               {val:"doubleout",label:"Double out",desc:"Finir sur une double ou Bull"}].map(function(r){
               var active=rule===r.val;
-              return(
-                <div key={r.val} onClick={function(){setRule(r.val);}}
-                  style={{flex:1,background:active?C.card:C.inputBg,
-                    border:"2px solid "+(active?C.accent:C.border),
-                    borderRadius:10,padding:"12px 10px",textAlign:"center",cursor:"pointer",
-                    transition:"all 0.2s"}}>
-                  <div style={{color:active?C.accent:C.text,fontSize:13,fontWeight:"bold",marginBottom:4}}>
-                    {r.label}
-                  </div>
-                  <div style={{color:C.muted,fontSize:11}}>{r.desc}</div>
-                </div>
-              );
+              return(<div key={r.val} onClick={function(){setRule(r.val);}}
+                style={{flex:1,background:active?C.card:C.inputBg,
+                  border:"2px solid "+(active?C.accent:C.border),
+                  borderRadius:10,padding:"12px 10px",textAlign:"center",cursor:"pointer",transition:"all 0.2s"}}>
+                <div style={{color:active?C.accent:C.text,fontSize:13,fontWeight:"bold",marginBottom:4}}>{r.label}</div>
+                <div style={{color:C.muted,fontSize:11}}>{r.desc}</div>
+              </div>);
             })}
           </div>
         </div>
@@ -810,15 +844,15 @@ function SetupScreen(props){
             <div>{"• Départ à "}<strong style={{color:C.text}}>{gameType} points</strong>{" par équipe"}</div>
             <div>{"• "}<strong style={{color:C.text}}>3 lancers</strong>{" par tour"}</div>
             <div>{"• Atteindre "}<strong style={{color:C.green}}>exactement 0</strong>{" pour gagner"}</div>
-            {rule==="doubleout"&&<div style={{color:C.accent}}>{"• Finir obligatoirement sur une "}<strong>double</strong>{" ou le Bull"}</div>}
+            {rule==="doubleout"&&<div style={{color:C.accent}}>{"• Finir sur une "}<strong>double</strong>{" ou le Bull"}</div>}
             <div>{"• Dépasser 0 = "}<strong style={{color:C.red}}>Bust !</strong></div>
           </div>
         ):(
           <div style={{color:C.muted,fontSize:13,lineHeight:1.8}}>
-            <div>{"• Secteurs cibles : "}<strong style={{color:C.text}}>15, 16, 17, 18, 19, 20 + Bull</strong></div>
-            <div>{"• Fermer un secteur = "}<strong style={{color:C.text}}>3 touches</strong>{" (Simple=1, Double=2, Triple=3)"}</div>
-            <div>{"• Une fois fermé, chaque touch "}<strong style={{color:C.green}}>rapporte des points</strong>{" (si l'adversaire n'a pas fermé)"}</div>
-            <div>{"• Gagner = tous les secteurs fermés "}<strong style={{color:C.green}}>ET</strong>{" le score le plus élevé"}</div>
+            <div>{"• Secteurs : "}<strong style={{color:C.text}}>15, 16, 17, 18, 19, 20, Bull</strong></div>
+            <div>{"• Fermer = "}<strong style={{color:C.text}}>3 touches</strong>{" (S=1, D=2, T=3)"}</div>
+            <div>{"• Secteur fermé = points si l'adversaire n'a pas encore fermé"}</div>
+            <div>{"• Gagner = tous fermés "}<strong style={{color:C.green}}>ET</strong>{" score le plus élevé"}</div>
           </div>
         )}
       </div>
@@ -833,11 +867,66 @@ function SetupScreen(props){
   );
 }
 
-/* ══ GAME 301/501 ═════════════════════════════════════════════════ */
+/* ══ ACTION BUTTONS (partagé 301+Cricket) ════════════════════════ */
+function ActionButtons(props){
+  var canUndo=props.canUndo,onUndo=props.onUndo;
+  var canPass=props.canPass,onPass=props.onPass;
+  var turnComplete=props.turnComplete,onValidate=props.onValidate,C=props.C;
+  return(
+    <div style={{display:"flex",gap:8}}>
+      <button onClick={onUndo} disabled={!canUndo}
+        style={{flex:1,background:canUndo?C.card:C.surface,border:"1px solid "+C.border,
+          borderRadius:12,padding:"13px 0",color:canUndo?C.text:C.muted,fontSize:13,
+          cursor:canUndo?"pointer":"default",letterSpacing:1,fontFamily:"Georgia,serif",transition:"all 0.2s"}}>
+        ↩ Annuler
+      </button>
+      <button onClick={onPass} disabled={!canPass}
+        style={{flex:1,background:C.surface,border:"1px solid "+C.border,
+          borderRadius:12,padding:"13px 0",color:canPass?C.muted:"transparent",fontSize:13,
+          cursor:canPass?"pointer":"default",fontFamily:"Georgia,serif"}}>
+        ⏭ Passer
+      </button>
+      <button onClick={onValidate} disabled={!turnComplete}
+        style={{flex:1.4,
+          background:turnComplete?"linear-gradient(135deg,"+C.green+",#1a9450)":C.surface,
+          border:"1px solid "+(turnComplete?C.green:C.border),
+          borderRadius:12,padding:"13px 0",color:turnComplete?"#fff":C.muted,
+          fontSize:13,fontWeight:"bold",cursor:turnComplete?"pointer":"default",
+          letterSpacing:1,fontFamily:"Georgia,serif",
+          boxShadow:turnComplete?"0 0 16px "+C.green+"55":"none",transition:"all 0.3s"}}>
+        {turnComplete?"✓ Valider":"Valider →"}
+      </button>
+    </div>
+  );
+}
+
+/* ══ GAME LAYOUT WRAPPER ══════════════════════════════════════════
+   iPad paysage : left=colonne contrôles, right=cible plein écran
+   Autres formats : colonne unique
+════════════════════════════════════════════════════════════════════ */
+function GameLayout(props){
+  var leftContent=props.leftContent;
+  var boardContent=props.boardContent;
+  var C=props.C;
+  return(
+    <div className="game-layout" style={{flex:1,display:"flex",flexDirection:"column",
+      overflow:"hidden"}}>
+      <div className="game-left" style={{display:"flex",flexDirection:"column",gap:10,
+        padding:"12px 14px"}}>
+        {leftContent}
+      </div>
+      <div className="game-right" style={{flex:1,display:"flex",alignItems:"center",
+        justifyContent:"center",padding:"8px"}}>
+        {boardContent}
+      </div>
+    </div>
+  );
+}
+
+/* ══ GAME 301/501 ════════════════════════════════════════════════ */
 function Game301(props){
   var initialTeams=props.initialTeams,onNewGame=props.onNewGame;
-  var savedState=props.savedState,rule=props.rule,C=props.C;
-  var gameType=props.gameType||"301";
+  var savedState=props.savedState,rule=props.rule,C=props.C,gameType=props.gameType||"301";
   var startScore=gameType==="501"?501:301;
 
   function buildInit(){
@@ -849,18 +938,18 @@ function Game301(props){
   var init=buildInit();
   var effectiveRule=init.rule||rule||"simple";
 
-  var a1=useState(init.teams);      var teams=a1[0],setTeams=a1[1];
-  var a2=useState(init.currentIdx); var currentIdx=a2[0],setCurrentIdx=a2[1];
-  var a3=useState(init.throws);     var throws=a3[0],setThrows=a3[1];
-  var a4=useState(init.history);    var history=a4[0],setHistory=a4[1];
-  var a5=useState(false);           var bust=a5[0],setBust=a5[1];
-  var a6=useState(null);            var bustPend=a6[0],setBustPend=a6[1];
-  var a7=useState(init.winner);     var winner=a7[0],setWinner=a7[1];
-  var a8=useState(false);           var showHist=a8[0],setShowHist=a8[1];
-  var a9=useState(false);           var showConf=a9[0],setShowConf=a9[1];
-  var a10=useState(init.stats);     var stats=a10[0],setStats=a10[1];
-  var a11=useState(false);          var showQuit=a11[0],setShowQuit=a11[1];
-  var a12=useState(false);          var showStats=a12[0],setShowStats=a12[1];
+  var s1=useState(init.teams);      var teams=s1[0],setTeams=s1[1];
+  var s2=useState(init.currentIdx); var currentIdx=s2[0],setCurrentIdx=s2[1];
+  var s3=useState(init.throws);     var throws=s3[0],setThrows=s3[1];
+  var s4=useState(init.history);    var history=s4[0],setHistory=s4[1];
+  var s5=useState(false);           var bust=s5[0],setBust=s5[1];
+  var s6=useState(null);            var bustPend=s6[0],setBustPend=s6[1];
+  var s7=useState(init.winner);     var winner=s7[0],setWinner=s7[1];
+  var s8=useState(false);           var showHist=s8[0],setShowHist=s8[1];
+  var s9=useState(false);           var showConf=s9[0],setShowConf=s9[1];
+  var s10=useState(init.stats);     var stats=s10[0],setStats=s10[1];
+  var s11=useState(false);          var showQuit=s11[0],setShowQuit=s11[1];
+  var s12=useState(false);          var showStats=s12[0],setShowStats=s12[1];
 
   var team=teams[currentIdx];
   var roundTotal=throws.reduce(function(s,t){return s+t.score;},0);
@@ -868,10 +957,7 @@ function Game301(props){
   var boardDisabled=throws.length>=MAX_THROWS||bust;
   var canUndo=throws.length>0&&!bust;
   var turnComplete=throws.length>=MAX_THROWS&&!bust;
-  var checkoutHint=null;
-  if(projected>0&&projected<=170&&projected in CHECKOUT&&throws.length===0){
-    checkoutHint=CHECKOUT[projected];
-  }
+  var checkoutHint=projected>0&&projected<=170&&projected in CHECKOUT&&throws.length===0?CHECKOUT[projected]:null;
 
   useEffect(function(){
     if(!winner){
@@ -891,8 +977,7 @@ function Game301(props){
     var now=new Date();
     existing.push({
       date:now.toLocaleDateString("fr-FR")+" "+now.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),
-      winner:w.name,rule:effectiveRule,gameType:gameType,
-      totalThrows:stats.totalThrows,
+      winner:w.name,rule:effectiveRule,gameType:gameType,totalThrows:stats.totalThrows,
       teams:teams.map(function(t){return{name:t.name,score:t.score,
         avgPerTurn:stats.rounds>0?(startScore/Math.max(1,stats.totalThrows)*3).toFixed(1):null,
         bestTurn:stats.bestTurn};})
@@ -920,10 +1005,7 @@ function Game301(props){
     var total=nt.reduce(function(s,t){return s+t.score;},0);
     var ns=team.score-total;
     if(ns<0){setBustPend(nt);setBust(true);}
-    else if(ns===0){
-      if(isValidFinish(nt)){commitTurn(nt,true);}
-      else{setBustPend(nt);setBust(true);}
-    }
+    else if(ns===0){if(isValidFinish(nt)){commitTurn(nt,true);}else{setBustPend(nt);setBust(true);}}
   }
 
   function handleBustDone(){
@@ -937,6 +1019,7 @@ function Game301(props){
 
   function undoLast(){if(canUndo)setThrows(function(t){return t.slice(0,t.length-1);});}
   function passTurn(){if(throws.length===0&&!bust)setCurrentIdx(function(i){return(i+1)%teams.length;});}
+
   function resetGame(){
     ls_del(SAVE_KEY);
     setTeams(initialTeams.map(function(t){return{id:t.id,name:t.name,score:startScore};}));
@@ -950,6 +1033,59 @@ function Game301(props){
     onNewGame={function(){ls_del(SAVE_KEY);onNewGame();}}
     onSameTeams={resetGame}/>;
 
+  var leftContent=(
+    <React.Fragment>
+      <ScorePanel teams={teams} currentIdx={currentIdx} C={C}/>
+      <div style={{background:C.surface,borderRadius:13,padding:"12px 14px",border:"1px solid "+C.border}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div>
+            <div style={{color:TEAM_COLORS[currentIdx],fontSize:13,fontWeight:"bold",
+              letterSpacing:1,textTransform:"uppercase"}}>{team.name}</div>
+            <div style={{color:C.muted,fontSize:11,marginTop:1}}>
+              {"Lancer "+throws.length+"/"+MAX_THROWS}
+              {turnComplete&&<span style={{color:C.accent,marginLeft:6}}>✓ Prêt à valider</span>}
+            </div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{color:projected<0?C.red:projected===0?C.green:C.text,
+              fontSize:26,fontWeight:"bold",fontFamily:"monospace",transition:"color 0.2s"}}>
+              {projected<0?"BUST!":projected}
+            </div>
+            {roundTotal>0&&projected>=0&&<div style={{color:C.accent,fontSize:11}}>{"−"+roundTotal+" pts"}</div>}
+          </div>
+        </div>
+        <ThrowDots throws={throws} max={MAX_THROWS} C={C}/>
+        {checkoutHint&&(
+          <div style={{marginTop:10,background:C.card,borderRadius:8,padding:"8px 12px",
+            display:"flex",alignItems:"center",gap:8,border:"1px solid "+C.accent+"44"}}>
+            <span style={{fontSize:14}}>💡</span>
+            <div>
+              <div style={{color:C.accent,fontSize:10,letterSpacing:1,textTransform:"uppercase"}}>Checkout suggéré</div>
+              <div style={{color:C.text,fontSize:13,fontWeight:"bold",fontFamily:"monospace"}}>{checkoutHint}</div>
+            </div>
+          </div>
+        )}
+        {effectiveRule==="doubleout"&&projected>0&&projected<=40&&projected%2===0&&throws.length===MAX_THROWS-1&&(
+          <div style={{marginTop:8,color:C.accent,fontSize:11,textAlign:"center",fontStyle:"italic"}}>
+            {"⚠️ Double out requis — visez D"+(projected/2)}
+          </div>
+        )}
+      </div>
+      {!boardDisabled&&(
+        <button onClick={function(){handleScore({value:0,multiplier:1,score:0,label:"0",isDouble:false,isBull:false});}}
+          style={{width:"100%",background:C.surface,border:"1px solid "+C.border,
+            borderRadius:12,padding:"11px 0",color:C.muted,fontSize:14,
+            cursor:"pointer",letterSpacing:2,fontFamily:"Georgia,serif"}}>
+          🎯 Raté — 0 point
+        </button>
+      )}
+      <ActionButtons canUndo={canUndo} onUndo={undoLast}
+        canPass={throws.length===0&&!bust} onPass={passTurn}
+        turnComplete={turnComplete} onValidate={function(){if(turnComplete)setShowConf(true);}}
+        C={C}/>
+    </React.Fragment>
+  );
+
   return(
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",
       fontFamily:"Georgia,serif",paddingBottom:"env(safe-area-inset-bottom,16px)"}}>
@@ -960,92 +1096,14 @@ function Game301(props){
           style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer"}}>✕ Quitter</button>
         <button onClick={function(){setShowStats(true);}}
           style={{background:"none",border:"none",color:C.accent,fontSize:14,fontWeight:"bold",
-            cursor:"pointer",letterSpacing:2}}>
-          🎯 {gameType.toUpperCase()}
-        </button>
+            cursor:"pointer",letterSpacing:2}}>🎯 {gameType.toUpperCase()}</button>
         <button onClick={function(){setShowHist(true);}}
           style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer"}}>Historique</button>
       </div>
-      <div className="game-layout" style={{flex:1,padding:"12px 14px",display:"flex",
-        flexDirection:"column",gap:10,overflow:"hidden"}}>
-        <div className="game-left">
-          <ScorePanel teams={teams} currentIdx={currentIdx} C={C}/>
-          <div style={{background:C.surface,borderRadius:13,padding:"12px 14px",border:"1px solid "+C.border}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <div>
-                <div style={{color:TEAM_COLORS[currentIdx],fontSize:13,fontWeight:"bold",
-                  letterSpacing:1,textTransform:"uppercase"}}>{team.name}</div>
-                <div style={{color:C.muted,fontSize:11,marginTop:1}}>
-                  {"Lancer "+throws.length+"/"+MAX_THROWS}
-                  {turnComplete&&<span style={{color:C.accent,marginLeft:6}}>✓ Prêt à valider</span>}
-                </div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{color:projected<0?C.red:projected===0?C.green:C.text,
-                  fontSize:26,fontWeight:"bold",fontFamily:"monospace",transition:"color 0.2s"}}>
-                  {projected<0?"BUST!":projected}
-                </div>
-                {roundTotal>0&&projected>=0&&<div style={{color:C.accent,fontSize:11}}>{"−"+roundTotal+" pts"}</div>}
-              </div>
-            </div>
-            <ThrowDots throws={throws} max={MAX_THROWS} C={C}/>
-            {checkoutHint&&(
-              <div style={{marginTop:10,background:C.card,borderRadius:8,padding:"8px 12px",
-                display:"flex",alignItems:"center",gap:8,border:"1px solid "+C.accent+"44"}}>
-                <span style={{fontSize:14}}>💡</span>
-                <div>
-                  <div style={{color:C.accent,fontSize:10,letterSpacing:1,textTransform:"uppercase"}}>Checkout suggéré</div>
-                  <div style={{color:C.text,fontSize:13,fontWeight:"bold",fontFamily:"monospace"}}>{checkoutHint}</div>
-                </div>
-              </div>
-            )}
-            {effectiveRule==="doubleout"&&projected>0&&projected<=40&&projected%2===0&&throws.length===MAX_THROWS-1&&(
-              <div style={{marginTop:8,color:C.accent,fontSize:11,textAlign:"center",fontStyle:"italic"}}>
-                {"⚠️ Double out requis — visez D"+(projected/2)}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="game-right">
-          <div style={{flex:1,display:"flex",alignItems:"center",minHeight:0}}>
-            <DartBoard onScore={handleScore} disabled={boardDisabled} C={C}/>
-          </div>
-          {!boardDisabled&&
-            <button onClick={function(){handleScore({value:0,multiplier:1,score:0,label:"0",isDouble:false,isBull:false});}}
-              style={{width:"100%",background:C.surface,border:"1px solid "+C.border,
-                borderRadius:12,padding:"11px 0",color:C.muted,fontSize:14,
-                cursor:"pointer",letterSpacing:2,fontFamily:"Georgia,serif"}}>
-              🎯 Raté — 0 point
-            </button>
-          }
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={undoLast} disabled={!canUndo}
-              style={{flex:1,background:canUndo?C.card:C.surface,border:"1px solid "+C.border,
-                borderRadius:12,padding:"13px 0",color:canUndo?C.text:C.muted,fontSize:13,
-                cursor:canUndo?"pointer":"default",letterSpacing:1,fontFamily:"Georgia,serif",transition:"all 0.2s"}}>
-              ↩ Annuler
-            </button>
-            <button onClick={passTurn} disabled={throws.length>0||bust}
-              style={{flex:1,background:C.surface,border:"1px solid "+C.border,
-                borderRadius:12,padding:"13px 0",
-                color:(throws.length===0&&!bust)?C.muted:"transparent",fontSize:13,
-                cursor:(throws.length===0&&!bust)?"pointer":"default",fontFamily:"Georgia,serif"}}>
-              ⏭ Passer
-            </button>
-            <button onClick={function(){if(turnComplete)setShowConf(true);}}
-              disabled={!turnComplete}
-              style={{flex:1.4,
-                background:turnComplete?"linear-gradient(135deg,"+C.green+",#1a9450)":C.surface,
-                border:"1px solid "+(turnComplete?C.green:C.border),
-                borderRadius:12,padding:"13px 0",color:turnComplete?"#fff":C.muted,
-                fontSize:13,fontWeight:"bold",cursor:turnComplete?"pointer":"default",
-                letterSpacing:1,fontFamily:"Georgia,serif",
-                boxShadow:turnComplete?"0 0 16px "+C.green+"55":"none",transition:"all 0.3s"}}>
-              {turnComplete?"✓ Valider":"Valider →"}
-            </button>
-          </div>
-        </div>
-      </div>
+      <GameLayout C={C}
+        leftContent={leftContent}
+        boardContent={<DartBoard onScore={handleScore} disabled={boardDisabled} C={C}/>}
+      />
       <BustOverlay show={bust} onDone={handleBustDone} C={C}/>
       {showQuit&&<QuitModal onCancel={function(){setShowQuit(false);}} onConfirm={onNewGame} C={C}/>}
       {showConf&&<ConfirmModal team={team} teamIdx={currentIdx} throws={throws}
@@ -1057,10 +1115,9 @@ function Game301(props){
   );
 }
 
-/* ══ GAME CRICKET ═════════════════════════════════════════════════ */
+/* ══ GAME CRICKET ════════════════════════════════════════════════ */
 function GameCricket(props){
-  var initialTeams=props.initialTeams,onNewGame=props.onNewGame;
-  var savedState=props.savedState,C=props.C;
+  var initialTeams=props.initialTeams,onNewGame=props.onNewGame,savedState=props.savedState,C=props.C;
 
   function buildInitCricket(){
     if(savedState)return savedState;
@@ -1069,98 +1126,45 @@ function GameCricket(props){
       cs[t.id]={};
       CRICKET_SECTORS.forEach(function(s){cs[t.id][s]=0;cs[t.id]["pts_"+s]=0;});
     });
-    return{
-      teams:initialTeams.map(function(t){return{id:t.id,name:t.name};}),
+    return{teams:initialTeams.map(function(t){return{id:t.id,name:t.name};}),
       currentIdx:0,throws:[],history:[],cricketState:cs,
-      stats:{rounds:0,totalThrows:0,bestTurn:null},winner:null,gameType:"cricket"
-    };
+      stats:{rounds:0,totalThrows:0,bestTurn:null},winner:null,gameType:"cricket"};
   }
   var init=buildInitCricket();
 
-  var a1=useState(init.teams);          var teams=a1[0],setTeams=a1[1];
-  var a2=useState(init.currentIdx);     var currentIdx=a2[0],setCurrentIdx=a2[1];
-  var a3=useState(init.throws);         var throws=a3[0],setThrows=a3[1];
-  var a4=useState(init.history);        var history=a4[0],setHistory=a4[1];
-  var a5=useState(init.cricketState);   var cs=a5[0],setCs=a5[1];
-  var a6=useState(init.winner);         var winner=a6[0],setWinner=a6[1];
-  var a7=useState(false);               var showHist=a7[0],setShowHist=a7[1];
-  var a8=useState(false);               var showConf=a8[0],setShowConf=a8[1];
-  var a9=useState(init.stats);          var stats=a9[0],setStats=a9[1];
-  var a10=useState(false);              var showQuit=a10[0],setShowQuit=a10[1];
-  var a11=useState(false);              var showStats=a11[0],setShowStats=a11[1];
+  var s1=useState(init.teams);         var teams=s1[0],setTeams=s1[1];
+  var s2=useState(init.currentIdx);    var currentIdx=s2[0],setCurrentIdx=s2[1];
+  var s3=useState(init.throws);        var throws=s3[0],setThrows=s3[1];
+  var s4=useState(init.history);       var history=s4[0],setHistory=s4[1];
+  var s5=useState(init.cricketState);  var cs=s5[0],setCs=s5[1];
+  var s6=useState(init.winner);        var winner=s6[0],setWinner=s6[1];
+  var s7=useState(false);              var showHist=s7[0],setShowHist=s7[1];
+  var s8=useState(init.stats);         var stats=s8[0],setStats=s8[1];
+  var s9=useState(false);              var showQuit=s9[0],setShowQuit=s9[1];
+  var s10=useState(false);             var showStats=s10[0],setShowStats=s10[1];
 
   var team=teams[currentIdx];
   var boardDisabled=throws.length>=MAX_THROWS;
   var canUndo=throws.length>0;
   var turnComplete=throws.length>=MAX_THROWS;
 
-  /* Calcul du total de points d'une équipe */
-  function teamTotal(teamId){
-    return Object.keys(cs[teamId]||{}).reduce(function(s,k){
-      return k.indexOf("pts_")===0?s+(cs[teamId][k]||0):s;
-    },0);
-  }
-
-  /* Vérifier si une équipe a fermé tous les secteurs */
-  function allClosed(teamId){
-    return CRICKET_SECTORS.every(function(s){return(cs[teamId][s]||0)>=3;});
-  }
-
-  /* Vérifier victoire : tous fermés ET score le plus élevé */
-  function checkWin(newCs){
-    for(var ti=0;ti<teams.length;ti++){
-      var t=teams[ti];
-      if(!allClosedInState(newCs,t.id))continue;
-      var myTotal=teamTotalInState(newCs,t.id);
-      var isWinner=teams.every(function(ot){
-        return ot.id===t.id||teamTotalInState(newCs,ot.id)<=myTotal;
-      });
-      if(isWinner)return t;
-    }
-    return null;
-  }
-
-  function allClosedInState(state,teamId){
-    return CRICKET_SECTORS.every(function(s){return(state[teamId][s]||0)>=3;});
-  }
   function teamTotalInState(state,teamId){
     return Object.keys(state[teamId]||{}).reduce(function(s,k){
       return k.indexOf("pts_")===0?s+(state[teamId][k]||0):s;
     },0);
   }
-
-  /* Appliquer un lancer au cricketState */
-  function applyThrow(currentCs,teamId,value,hits){
-    /* value = 15,16,17,18,19,20 ou 25 (bull) */
-    var validSector=CRICKET_SECTORS.indexOf(value)>=0;
-    if(!validSector)return{newCs:currentCs,pts:0};
-
-    var newCs=JSON.parse(JSON.stringify(currentCs));
-    var current=newCs[teamId][value]||0;
-    if(current>=3){
-      /* Secteur déjà fermé : points si les adversaires n'ont pas fermé */
-      var anyOpen=teams.some(function(t){
-        return t.id!==teamId&&(newCs[t.id][value]||0)<3;
-      });
-      if(anyOpen){newCs[teamId]["pts_"+value]=(newCs[teamId]["pts_"+value]||0)+value*hits;}
-      return{newCs:newCs,pts:0};
+  function allClosedInState(state,teamId){
+    return CRICKET_SECTORS.every(function(s){return(state[teamId][s]||0)>=3;});
+  }
+  function checkWin(newCs){
+    for(var ti=0;ti<teams.length;ti++){
+      var t=teams[ti];
+      if(!allClosedInState(newCs,t.id))continue;
+      var myTotal=teamTotalInState(newCs,t.id);
+      var isWinner=teams.every(function(ot){return ot.id===t.id||teamTotalInState(newCs,ot.id)<=myTotal;});
+      if(isWinner)return t;
     }
-
-    var newHits=current+hits;
-    if(newHits>=3){
-      /* On ferme le secteur, l'excédent rapporte des points */
-      newCs[teamId][value]=3;
-      var excess=newHits-3;
-      if(excess>0){
-        var anyOpen2=teams.some(function(t){
-          return t.id!==teamId&&(newCs[t.id][value]||0)<3;
-        });
-        if(anyOpen2){newCs[teamId]["pts_"+value]=(newCs[teamId]["pts_"+value]||0)+value*excess;}
-      }
-    }else{
-      newCs[teamId][value]=newHits;
-    }
-    return{newCs:newCs,pts:0};
+    return null;
   }
 
   useEffect(function(){
@@ -1172,32 +1176,35 @@ function GameCricket(props){
 
   function handleScore(td){
     if(throws.length>=MAX_THROWS)return;
-    var nt=throws.concat([td]);
-    setThrows(nt);
+    setThrows(throws.concat([td]));
   }
 
   function commitCricketTurn(th){
-    /* Appliquer tous les lancers */
     var newCs=JSON.parse(JSON.stringify(cs));
-    var turnScore=0;
     th.forEach(function(td){
-      var val=td.value===50?25:td.value; /* 50 et 25 = Bull */
+      var val=td.value===50?25:td.value;
+      if(CRICKET_SECTORS.indexOf(val)<0)return;
       var hits=td.multiplier;
-      var res=applyThrow(newCs,team.id,val,hits);
-      newCs=res.newCs;
+      var current=newCs[team.id][val]||0;
+      if(current>=3){
+        var anyOpen=teams.some(function(t){return t.id!==team.id&&(newCs[t.id][val]||0)<3;});
+        if(anyOpen)newCs[team.id]["pts_"+val]=(newCs[team.id]["pts_"+val]||0)+val*hits;
+      }else{
+        var newHits=current+hits;
+        if(newHits>=3){
+          newCs[team.id][val]=3;
+          var excess=newHits-3;
+          if(excess>0){
+            var anyOpen2=teams.some(function(t){return t.id!==team.id&&(newCs[t.id][val]||0)<3;});
+            if(anyOpen2)newCs[team.id]["pts_"+val]=(newCs[team.id]["pts_"+val]||0)+val*excess;
+          }
+        }else{newCs[team.id][val]=newHits;}
+      }
     });
     setCs(newCs);
-
-    var totalPts=teamTotalInState(newCs,team.id);
-    setHistory(function(h){return h.concat([{teamId:team.id,teamName:team.name,
-      throws:th,total:totalPts,bust:false}]);});
-    setStats(function(s){
-      var best=s.bestTurn===null?th.length:Math.max(s.bestTurn,th.length);
-      return{rounds:s.rounds+1,totalThrows:s.totalThrows+th.length,bestTurn:best};
-    });
+    setHistory(function(h){return h.concat([{teamId:team.id,teamName:team.name,throws:th,total:0,bust:false}]);});
+    setStats(function(s){return{rounds:s.rounds+1,totalThrows:s.totalThrows+th.length,bestTurn:s.bestTurn};});
     setThrows([]);
-
-    /* Vérifier victoire */
     var w=checkWin(newCs);
     if(w){
       var existing=ls_get(HISTORY_KEY)||[];
@@ -1209,9 +1216,7 @@ function GameCricket(props){
       });
       ls_set(HISTORY_KEY,existing);
       setWinner(w);
-    }else{
-      setCurrentIdx(function(i){return(i+1)%teams.length;});
-    }
+    }else{setCurrentIdx(function(i){return(i+1)%teams.length;});}
   }
 
   function undoLast(){if(canUndo)setThrows(function(t){return t.slice(0,t.length-1);});}
@@ -1235,8 +1240,44 @@ function GameCricket(props){
     onNewGame={function(){ls_del(SAVE_KEY);onNewGame();}}
     onSameTeams={resetGame}/>;
 
-  /* Secteurs non encore fermés par l'équipe courante = à cibler */
   var openSectors=CRICKET_SECTORS.filter(function(s){return(cs[team.id][s]||0)<3;});
+
+  var leftContent=(
+    <React.Fragment>
+      <CricketPanel teams={teams} currentIdx={currentIdx} cricketState={cs} C={C}/>
+      <div style={{background:C.surface,borderRadius:13,padding:"10px 14px",border:"1px solid "+C.border}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div>
+            <div style={{color:TEAM_COLORS[currentIdx],fontSize:13,fontWeight:"bold",
+              letterSpacing:1,textTransform:"uppercase"}}>{team.name}</div>
+            <div style={{color:C.muted,fontSize:11,marginTop:1}}>
+              {"Lancer "+throws.length+"/"+MAX_THROWS}
+              {turnComplete&&<span style={{color:C.accent,marginLeft:6}}>✓ Prêt à valider</span>}
+            </div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{color:C.text,fontSize:13,fontFamily:"monospace"}}>
+              {openSectors.length===0?"Tous fermés !":openSectors.map(function(s){return s===25?"Bull":s;}).join(" · ")}
+            </div>
+            <div style={{color:C.muted,fontSize:10}}>à fermer</div>
+          </div>
+        </div>
+        <ThrowDots throws={throws} max={MAX_THROWS} C={C}/>
+      </div>
+      {!boardDisabled&&(
+        <button onClick={function(){handleScore({value:0,multiplier:1,score:0,label:"0",isDouble:false,isBull:false});}}
+          style={{width:"100%",background:C.surface,border:"1px solid "+C.border,
+            borderRadius:12,padding:"11px 0",color:C.muted,fontSize:14,
+            cursor:"pointer",letterSpacing:2,fontFamily:"Georgia,serif"}}>
+          🎯 Raté — 0 point
+        </button>
+      )}
+      <ActionButtons canUndo={canUndo} onUndo={undoLast}
+        canPass={throws.length===0} onPass={passTurn}
+        turnComplete={turnComplete} onValidate={function(){if(turnComplete)commitCricketTurn(throws);}}
+        C={C}/>
+    </React.Fragment>
+  );
 
   return(
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",
@@ -1253,81 +1294,18 @@ function GameCricket(props){
         <button onClick={function(){setShowHist(true);}}
           style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer"}}>Historique</button>
       </div>
-      <div className="game-layout" style={{flex:1,padding:"10px 12px",display:"flex",
-        flexDirection:"column",gap:8,overflow:"hidden"}}>
-        <div className="game-left">
-          {/* Tableau Cricket */}
-          <CricketPanel teams={teams} currentIdx={currentIdx} cricketState={cs} C={C}/>
-          {/* Infos tour */}
-          <div style={{background:C.surface,borderRadius:13,padding:"10px 14px",border:"1px solid "+C.border}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <div>
-                <div style={{color:TEAM_COLORS[currentIdx],fontSize:13,fontWeight:"bold",
-                  letterSpacing:1,textTransform:"uppercase"}}>{team.name}</div>
-                <div style={{color:C.muted,fontSize:11,marginTop:1}}>
-                  {"Lancer "+throws.length+"/"+MAX_THROWS}
-                  {turnComplete&&<span style={{color:C.accent,marginLeft:6}}>✓ Prêt à valider</span>}
-                </div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{color:C.text,fontSize:14,fontFamily:"monospace"}}>
-                  {openSectors.length===0?"Tous fermés !":
-                    openSectors.map(function(s){return s===25?"Bull":s;}).join(" · ")}
-                </div>
-                <div style={{color:C.muted,fontSize:10}}>secteurs à fermer</div>
-              </div>
-            </div>
-            <ThrowDots throws={throws} max={MAX_THROWS} C={C}/>
-          </div>
-        </div>
-        <div className="game-right">
-          <div style={{flex:1,display:"flex",alignItems:"center",minHeight:0}}>
-            <DartBoard onScore={handleScore} disabled={boardDisabled} C={C}
-              highlightSectors={openSectors.length>0?CRICKET_SECTORS:null}/>
-          </div>
-          {!boardDisabled&&
-            <button onClick={function(){handleScore({value:0,multiplier:1,score:0,label:"0",isDouble:false,isBull:false});}}
-              style={{width:"100%",background:C.surface,border:"1px solid "+C.border,
-                borderRadius:12,padding:"11px 0",color:C.muted,fontSize:14,
-                cursor:"pointer",letterSpacing:2,fontFamily:"Georgia,serif"}}>
-              🎯 Raté — 0 point
-            </button>
-          }
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={undoLast} disabled={!canUndo}
-              style={{flex:1,background:canUndo?C.card:C.surface,border:"1px solid "+C.border,
-                borderRadius:12,padding:"13px 0",color:canUndo?C.text:C.muted,fontSize:13,
-                cursor:canUndo?"pointer":"default",letterSpacing:1,fontFamily:"Georgia,serif"}}>
-              ↩ Annuler
-            </button>
-            <button onClick={passTurn} disabled={throws.length>0}
-              style={{flex:1,background:C.surface,border:"1px solid "+C.border,
-                borderRadius:12,padding:"13px 0",
-                color:throws.length===0?C.muted:"transparent",fontSize:13,
-                cursor:throws.length===0?"pointer":"default",fontFamily:"Georgia,serif"}}>
-              ⏭ Passer
-            </button>
-            <button onClick={function(){if(turnComplete)commitCricketTurn(throws);}}
-              disabled={!turnComplete}
-              style={{flex:1.4,
-                background:turnComplete?"linear-gradient(135deg,"+C.green+",#1a9450)":C.surface,
-                border:"1px solid "+(turnComplete?C.green:C.border),
-                borderRadius:12,padding:"13px 0",color:turnComplete?"#fff":C.muted,
-                fontSize:13,fontWeight:"bold",cursor:turnComplete?"pointer":"default",
-                letterSpacing:1,fontFamily:"Georgia,serif",
-                boxShadow:turnComplete?"0 0 16px "+C.green+"55":"none",transition:"all 0.3s"}}>
-              {turnComplete?"✓ Valider":"Valider →"}
-            </button>
-          </div>
-        </div>
-      </div>
+      <GameLayout C={C}
+        leftContent={leftContent}
+        boardContent={<DartBoard onScore={handleScore} disabled={boardDisabled} C={C}
+          highlightSectors={openSectors.length>0?CRICKET_SECTORS:null}/>}
+      />
       {showQuit&&<QuitModal onCancel={function(){setShowQuit(false);}} onConfirm={onNewGame} C={C}/>}
       {showHist&&<HistoryDrawer history={history} teams={teams} onClose={function(){setShowHist(false);}} C={C}/>}
     </div>
   );
 }
 
-/* ══ RESUME SCREEN ════════════════════════════════════════════════ */
+/* ══ RESUME SCREEN ═══════════════════════════════════════════════ */
 function ResumeScreen(props){
   var saved=props.saved,onResume=props.onResume,onNewGame=props.onNewGame,C=props.C;
   var teams=saved.teams||[];
@@ -1337,8 +1315,9 @@ function ResumeScreen(props){
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",
       alignItems:"center",justifyContent:"center",padding:24,fontFamily:"Georgia,serif"}}>
       <div style={{fontSize:52,marginBottom:16}}>{isCricket?"🏏":"🎯"}</div>
-      <h1 style={{color:C.accent,fontSize:26,fontWeight:"bold",letterSpacing:3,
-        textAlign:"center",marginBottom:8}}>PARTIE EN COURS</h1>
+      <h1 style={{color:C.accent,fontSize:26,fontWeight:"bold",letterSpacing:3,textAlign:"center",marginBottom:8}}>
+        PARTIE EN COURS
+      </h1>
       <div style={{color:C.accent,fontSize:12,marginBottom:20,background:C.card,
         padding:"4px 14px",borderRadius:20,border:"1px solid "+C.border}}>{label}</div>
       <div style={{width:"100%",maxWidth:360,background:C.surface,borderRadius:16,
@@ -1377,7 +1356,7 @@ function ResumeScreen(props){
   );
 }
 
-/* ══ APP ROOT ═════════════════════════════════════════════════════ */
+/* ══ APP ROOT ════════════════════════════════════════════════════ */
 function App(){
   var saved=ls_get(SAVE_KEY);
   var isDark=ls_get(THEME_KEY);
@@ -1408,13 +1387,11 @@ function App(){
       }}
       onNewGame={function(){ls_del(SAVE_KEY);setSavedSt(null);setScreen("home");}}/>;
   }
-
   if(screen==="home"){
     return <HomeScreen C={C} darkMode={darkMode} setDarkMode={setDarkMode}
       onShowStats={function(){setShowStats(true);}}
       onSelect={function(type){setGameType(type);setScreen("setup");}}/>;
   }
-
   if(screen==="setup"){
     return <SetupScreen C={C} gameType={gameType}
       onBack={function(){setScreen("home");}}
@@ -1423,17 +1400,14 @@ function App(){
         setGameTeams(teams);setGameRule(rule);setScreen("game");
       }}/>;
   }
-
   if(screen==="game"&&gameTeams){
     var savedForGame=savedSt&&savedSt.gameType===(gameType||"301")?savedSt:null;
     if(gameType==="cricket"){
-      return <GameCricket C={C} initialTeams={gameTeams}
-        savedState={savedForGame} onNewGame={goHome}/>;
+      return <GameCricket C={C} initialTeams={gameTeams} savedState={savedForGame} onNewGame={goHome}/>;
     }
     return <Game301 C={C} initialTeams={gameTeams} rule={gameRule}
       gameType={gameType} savedState={savedForGame} onNewGame={goHome}/>;
   }
-
   return <HomeScreen C={C} darkMode={darkMode} setDarkMode={setDarkMode}
     onShowStats={function(){setShowStats(true);}}
     onSelect={function(type){setGameType(type);setScreen("setup");}}/>;
