@@ -95,7 +95,33 @@
 </head>
 <body>
 <div id="root"></div>
+<script>
+/* ── Service Worker registration ── */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function() {
+    navigator.serviceWorker.register("./sw.js").then(function(reg) {
+      /* Quand un nouveau SW est en attente, on recharge pour l'activer */
+      reg.addEventListener("updatefound", function() {
+        var newWorker = reg.installing;
+        if (newWorker) {
+          newWorker.addEventListener("statechange", function() {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              /* Nouveau SW installé → reload silencieux pour appliquer le cache frais */
+              window.location.reload();
+            }
+          });
+        }
+      });
+    }).catch(function(err) {
+      console.warn("SW registration failed:", err);
+    });
+  });
+}
+</script>
+
 <script type="text/babel">
+
+var APP_VERSION = "V20260611 18H30";
 
 var useState  = React.useState;
 var useEffect = React.useEffect;
@@ -641,10 +667,129 @@ function WinScreen(props){
   );
 }
 
+/* ══ SETTINGS SCREEN ═════════════════════════════════════════════ */
+function SettingsScreen(props){
+  var onClose=props.onClose,C=props.C,darkMode=props.darkMode,setDarkMode=props.setDarkMode;
+
+  function clearHistory(){
+    if(window.confirm("Effacer tout l'historique des parties ?"))ls_del(HISTORY_KEY);
+  }
+  function clearSave(){
+    if(window.confirm("Annuler la partie en cours sauvegardée ?"))ls_del(SAVE_KEY);
+  }
+
+  return(
+    <div style={{position:"fixed",inset:0,background:C.bg,zIndex:900,overflowY:"auto",
+      fontFamily:"Georgia,serif",paddingBottom:40}}>
+      {/* Header */}
+      <div style={{background:C.headerBg,borderBottom:"1px solid "+C.border,
+        padding:"16px 20px",paddingTop:"max(16px,env(safe-area-inset-top,16px))",
+        display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:14,cursor:"pointer"}}>
+          ← Retour
+        </button>
+        <h2 style={{color:C.accent,fontSize:16,fontWeight:"bold",letterSpacing:2,textTransform:"uppercase"}}>
+          Réglages
+        </h2>
+        <div style={{width:60}}/>
+      </div>
+
+      <div style={{padding:"20px 16px",maxWidth:480,margin:"0 auto"}}>
+
+        {/* Version */}
+        <div style={{background:C.surface,borderRadius:14,padding:18,
+          border:"1px solid "+C.border,marginBottom:16}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{color:C.accent,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>
+                Version de l'application
+              </div>
+              <div style={{color:C.text,fontSize:20,fontWeight:"bold",fontFamily:"monospace"}}>
+                {APP_VERSION}
+              </div>
+            </div>
+            <div style={{fontSize:32}}>🎯</div>
+          </div>
+          <div style={{color:C.muted,fontSize:11,marginTop:8,lineHeight:1.5}}>
+            L'application fonctionne hors ligne grâce au Service Worker. Lors d'une mise à jour,
+            la page se recharge automatiquement pour charger la nouvelle version.
+          </div>
+        </div>
+
+        {/* Thème */}
+        <div style={{background:C.surface,borderRadius:14,padding:18,
+          border:"1px solid "+C.border,marginBottom:16}}>
+          <div style={{color:C.accent,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:14}}>
+            Apparence
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            {[{val:true,icon:"🌙",label:"Sombre"},{val:false,icon:"☀️",label:"Clair"}].map(function(opt){
+              var active=darkMode===opt.val;
+              return(
+                <div key={""+opt.val} onClick={function(){setDarkMode(opt.val);ls_set(THEME_KEY,opt.val);}}
+                  style={{flex:1,background:active?C.card:C.inputBg,
+                    border:"2px solid "+(active?C.accent:C.border),
+                    borderRadius:12,padding:"14px 10px",textAlign:"center",cursor:"pointer",transition:"all 0.2s"}}>
+                  <div style={{fontSize:24,marginBottom:4}}>{opt.icon}</div>
+                  <div style={{color:active?C.accent:C.muted,fontSize:13,fontWeight:active?"bold":"normal"}}>{opt.label}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Données */}
+        <div style={{background:C.surface,borderRadius:14,padding:18,
+          border:"1px solid "+C.border,marginBottom:16}}>
+          <div style={{color:C.accent,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:14}}>
+            Données
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <button onClick={clearHistory}
+              style={{background:"none",border:"1px solid "+C.border,borderRadius:10,
+                padding:"13px 16px",color:C.muted,fontSize:13,cursor:"pointer",
+                textAlign:"left",fontFamily:"Georgia,serif",display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:18}}>📊</span>
+              <div>
+                <div style={{color:C.text,fontSize:13,fontWeight:"bold"}}>Effacer l'historique</div>
+                <div style={{color:C.muted,fontSize:11,marginTop:2}}>Supprime toutes les parties enregistrées</div>
+              </div>
+            </button>
+            <button onClick={clearSave}
+              style={{background:"none",border:"1px solid "+C.border,borderRadius:10,
+                padding:"13px 16px",color:C.muted,fontSize:13,cursor:"pointer",
+                textAlign:"left",fontFamily:"Georgia,serif",display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:18}}>💾</span>
+              <div>
+                <div style={{color:C.text,fontSize:13,fontWeight:"bold"}}>Effacer la partie sauvegardée</div>
+                <div style={{color:C.muted,fontSize:11,marginTop:2}}>Annule la reprise de partie en cours</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Hors ligne info */}
+        <div style={{background:C.surface,borderRadius:14,padding:18,
+          border:"1px solid "+C.border}}>
+          <div style={{color:C.accent,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>
+            Mode hors ligne
+          </div>
+          <div style={{color:C.muted,fontSize:13,lineHeight:1.7}}>
+            <div>✅ Utilisable sans connexion après le premier chargement</div>
+            <div>✅ Scores et historique sauvegardés localement</div>
+            <div>✅ Mise à jour automatique au rechargement si en ligne</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 /* ══ HOME SCREEN ═════════════════════════════════════════════════ */
 function HomeScreen(props){
   var onSelect=props.onSelect,C=props.C,darkMode=props.darkMode,setDarkMode=props.setDarkMode;
-  var onShowStats=props.onShowStats;
+  var onShowStats=props.onShowStats,onShowSettings=props.onShowSettings;
   var games=[
     {key:"301",icon:"🎯",title:"301",desc:"Partez de 301, descendez à 0"},
     {key:"501",icon:"🎯",title:"501",desc:"Partez de 501, descendez à 0"},
@@ -658,6 +803,9 @@ function HomeScreen(props){
         <button onClick={onShowStats}
           style={{background:C.card,border:"1px solid "+C.border,borderRadius:20,
             padding:"6px 14px",color:C.muted,fontSize:14,cursor:"pointer"}}>📊</button>
+        <button onClick={onShowSettings}
+          style={{background:C.card,border:"1px solid "+C.border,borderRadius:20,
+            padding:"6px 14px",color:C.muted,fontSize:14,cursor:"pointer"}}>⚙️</button>
         <button onClick={function(){setDarkMode(!darkMode);ls_set(THEME_KEY,!darkMode);}}
           style={{background:C.card,border:"1px solid "+C.border,borderRadius:20,
             padding:"6px 14px",color:C.text,fontSize:16,cursor:"pointer"}}>
@@ -1369,6 +1517,7 @@ function App(){
   var b5=useState(!!isDark);              var darkMode=b5[0],setDarkMode=b5[1];
   var b6=useState(null);                  var gameType=b6[0],setGameType=b6[1];
   var b7=useState(false);                 var showStats=b7[0],setShowStats=b7[1];
+  var b8=useState(false);                 var showSettings=b8[0],setShowSettings=b8[1];
 
   var C=makeTheme(darkMode);
   useEffect(function(){document.body.style.background=C.bg;},[darkMode]);
@@ -1376,6 +1525,7 @@ function App(){
   function goHome(){ls_del(SAVE_KEY);setSavedSt(null);setGameTeams(null);setScreen("home");}
 
   if(showStats)return <StatsScreen C={C} onClose={function(){setShowStats(false);}}/>;
+  if(showSettings)return <SettingsScreen C={C} darkMode={darkMode} setDarkMode={setDarkMode} onClose={function(){setShowSettings(false);}}/>;
 
   if(screen==="resume"&&savedSt){
     return <ResumeScreen C={C} saved={savedSt}
@@ -1390,6 +1540,7 @@ function App(){
   if(screen==="home"){
     return <HomeScreen C={C} darkMode={darkMode} setDarkMode={setDarkMode}
       onShowStats={function(){setShowStats(true);}}
+      onShowSettings={function(){setShowSettings(true);}}
       onSelect={function(type){setGameType(type);setScreen("setup");}}/>;
   }
   if(screen==="setup"){
@@ -1410,6 +1561,7 @@ function App(){
   }
   return <HomeScreen C={C} darkMode={darkMode} setDarkMode={setDarkMode}
     onShowStats={function(){setShowStats(true);}}
+    onShowSettings={function(){setShowSettings(true);}}
     onSelect={function(type){setGameType(type);setScreen("setup");}}/>;
 }
 
