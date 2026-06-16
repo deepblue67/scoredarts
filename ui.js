@@ -1443,6 +1443,10 @@
       return "O";
     }
 
+    function compactTeamName(name) {
+      return String(name || "").replace(/^Equipe\s+/i, "");
+    }
+
     return h("div", {
       style: { background: C.surface, borderRadius: 12, border: "1px solid " + C.border, overflow: "hidden" }
     },
@@ -1460,17 +1464,18 @@
           var active = index === currentIdx;
           return h("div", {
             key: team.id,
+            title: team.name,
             style: {
               color: active ? teamColors[index] : C.muted,
               fontSize: 10,
               textAlign: "center",
-              letterSpacing: 1,
+              letterSpacing: 0,
               fontWeight: active ? "bold" : "normal",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap"
             }
-          }, team.name);
+          }, compactTeamName(team.name));
         }),
         h("div", { style: { color: C.muted, fontSize: 10, textAlign: "center" } }, "PTS")
       ),

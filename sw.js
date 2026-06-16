@@ -3,19 +3,24 @@
    Version : V20260611 18H30
 ══════════════════════════════════════════════════════════════════ */
 
-var APP_VERSION = "V20260616 13H30";
+var APP_VERSION = "V20260616 16H38";
 var CACHE_NAME  = "darts-cache-" + APP_VERSION;
 
 /* Ressources à mettre en cache au premier démarrage */
 var PRECACHE_URLS = [
   "./",
   "./index.html",
+  "./manifest.json",
+  "./assets/icon.svg",
+  "./assets/apple-touch-icon.png",
   "./storage.js",
   "./scoring.js",
   "./ui.js",
+  "./game01.js",
+  "./game-cricket.js",
+  "./app.js",
   "./vendor/react.production.min.js",
-  "./vendor/react-dom.production.min.js",
-  "./vendor/babel.min.js"
+  "./vendor/react-dom.production.min.js"
 ];
 
 /* ── Installation : pré-cache ── */

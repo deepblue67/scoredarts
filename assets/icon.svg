@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Darts">
+  <rect width="512" height="512" rx="96" fill="#0d0f1a"/>
+  <circle cx="256" cy="256" r="184" fill="#17110a"/>
+  <circle cx="256" cy="256" r="164" fill="#f5f0e0"/>
+  <path d="M256 92a164 164 0 0 1 142 82H114A164 164 0 0 1 256 92Z" fill="#111"/>
+  <path d="M398 338a164 164 0 0 1-284 0Z" fill="#111"/>
+  <path d="M338 114a164 164 0 0 1 60 60L256 256Z" fill="#e84545"/>
+  <path d="M174 398a164 164 0 0 1-60-60l142-82Z" fill="#27c96f"/>
+  <circle cx="256" cy="256" r="92" fill="none" stroke="#cc2222" stroke-width="26"/>
+  <circle cx="256" cy="256" r="54" fill="#1a6b3a"/>
+  <circle cx="256" cy="256" r="24" fill="#e84545"/>
+  <path d="M352 82l78-50-28 88 70 54-91 4-31 86-32-85-91-2 70-56-26-89Z" fill="#f5a623"/>
+</svg>
