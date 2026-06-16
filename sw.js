@@ -3,26 +3,34 @@
    Version : V20260611 18H30
 ══════════════════════════════════════════════════════════════════ */
 
-var APP_VERSION = "V20260611 18H30";
+var APP_VERSION = "V20260616 13H30";
 var CACHE_NAME  = "darts-cache-" + APP_VERSION;
 
 /* Ressources à mettre en cache au premier démarrage */
 var PRECACHE_URLS = [
   "./",
   "./index.html",
-  "https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"
+  "./storage.js",
+  "./scoring.js",
+  "./ui.js",
+  "./vendor/react.production.min.js",
+  "./vendor/react-dom.production.min.js",
+  "./vendor/babel.min.js"
 ];
 
 /* ── Installation : pré-cache ── */
 self.addEventListener("install", function(event) {
-  self.skipWaiting(); // Activation immédiate sans attendre l'onglet fermé
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.addAll(PRECACHE_URLS);
     })
   );
+});
+
+self.addEventListener("message", function(event) {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 /* ── Activation : suppression des anciens caches ── */

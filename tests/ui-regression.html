@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Darts UI regression</title>
+  <script>
+    window.React = {
+      createElement: function(type, props) {
+        return { type: type, props: props || {}, children: Array.prototype.slice.call(arguments, 2) };
+      },
+      useState: function(initialValue) { return [initialValue, function() {}]; },
+      useEffect: function() {}
+    };
+  </script>
+  <script src="../ui.js"></script>
+</head>
+<body>
+  <pre id="output">Running...</pre>
+  <script>
+    var checks = [
+      typeof DartsUI !== "undefined",
+      typeof DartsUI.DartBoard === "function",
+      typeof DartsUI.ThrowDots === "function",
+      typeof DartsUI.BustOverlay === "function",
+      typeof DartsUI.ActionButtons === "function",
+      typeof DartsUI.QuitModal === "function",
+      typeof DartsUI.ConfirmModal === "function",
+      typeof DartsUI.HistoryDrawer === "function",
+      typeof DartsUI.GameLayout === "function",
+      typeof DartsUI.ResumeScreen === "function",
+      typeof DartsUI.WinScreen === "function",
+      typeof DartsUI.SettingsScreen === "function",
+      typeof DartsUI.StatsScreen === "function",
+      typeof DartsUI.HomeScreen === "function",
+      typeof DartsUI.SetupScreen === "function",
+      typeof DartsUI.ScorePanel === "function",
+      typeof DartsUI.CricketPanel === "function",
+      DartsUI.DartBoard({
+        onScore: function() {},
+        disabled: false,
+        segments: [20, 1, 18],
+        C: {
+          accent: "#d4af37",
+          dartBlack: "#111",
+          dartCream: "#f5f0e0",
+          dartRed: "#cc2222",
+          dartGreen: "#1a6b3a"
+        }
+      }).type === "svg",
+      DartsUI.ThrowDots({ throws: [], max: 3, C: { card: "", accent: "", border: "", muted: "" } }).type === "div",
+      DartsUI.QuitModal({
+        onCancel: function() {},
+        onConfirm: function() {},
+        C: { card: "", surface: "", border: "", text: "", muted: "", red: "" }
+      }).type === "div",
+      DartsUI.ConfirmModal({
+        team: { name: "Red", score: 301 },
+        teamIdx: 0,
+        teamColors: ["#f00"],
+        throws: [{ label: "T20", score: 60 }],
+        projected: 241,
+        onConfirm: function() {},
+        onCancel: function() {},
+        C: { card: "", surface: "", border: "", text: "", muted: "", accent: "", green: "" }
+      }).type === "div",
+      DartsUI.HistoryDrawer({
+        history: [],
+        teams: [],
+        teamColors: [],
+        onClose: function() {},
+        C: { surface: "", border: "", text: "", muted: "", accent: "", red: "", green: "" }
+      }).type === "div",
+      DartsUI.GameLayout({
+        leftContent: "left",
+        boardContent: "board"
+      }).type === "div",
+      DartsUI.ResumeScreen({
+        saved: { gameType: "301", teams: [{ id: 1, name: "Red", score: 301 }] },
+        onResume: function() {},
+        onNewGame: function() {},
+        teamColors: ["#f00"],
+        C: { bg: "", card: "", surface: "", border: "", text: "", muted: "", accent: "", accentDim: "" }
+      }).type === "div",
+      DartsUI.WinScreen({
+        winner: { name: "Red" },
+        stats: { rounds: 3, totalThrows: 9, bestTurn: 120 },
+        gameType: "301",
+        onRestart: function() {},
+        onNewGame: function() {},
+        onSameTeams: function() {},
+        C: { bg: "", card: "", surface: "", border: "", text: "", muted: "", accent: "", accentDim: "" }
+      }).type === "div",
+      DartsUI.SettingsScreen({
+        onClose: function() {},
+        darkMode: true,
+        onSetDarkMode: function() {},
+        onClearHistory: function() {},
+        onClearSave: function() {},
+        version: "test",
+        C: { bg: "", headerBg: "", card: "", surface: "", inputBg: "", border: "", text: "", muted: "", accent: "" }
+      }).type === "div",
+      DartsUI.StatsScreen({
+        onClose: function() {},
+        onClearHistory: function() {},
+        teamColors: ["#f00"],
+        games: [{
+          date: "today",
+          gameType: "301",
+          rule: "simple",
+          winner: "Red",
+          teams: [{ name: "Red", score: 0, avgPerTurn: "75.0" }, { name: "Blue", score: 120 }]
+        }],
+        C: { bg: "", headerBg: "", card: "", surface: "", border: "", text: "", muted: "", accent: "", green: "", red: "" }
+      }).type === "div",
+      DartsUI.HomeScreen({
+        onSelect: function() {},
+        onShowStats: function() {},
+        onShowSettings: function() {},
+        onToggleTheme: function() {},
+        darkMode: true,
+        C: { bg: "", card: "", surface: "", border: "", text: "", muted: "", accent: "" }
+      }).type === "div",
+      DartsUI.SetupScreen({
+        onStart: function() {},
+        onBack: function() {},
+        onSaveTeams: function() {},
+        gameType: "301",
+        initialTeams: [{ id: 1, name: "Red" }, { id: 2, name: "Blue" }],
+        teamColors: ["#f00", "#00f"],
+        C: { bg: "", card: "", surface: "", inputBg: "", border: "", text: "", muted: "", accent: "", accentDim: "", green: "", red: "" }
+      }).type === "div",
+      DartsUI.ScorePanel({
+        teams: [{ id: 1, name: "Red", score: 301 }],
+        currentIdx: 0,
+        teamColors: ["#f00"],
+        C: { card: "", surface: "", border: "", text: "", muted: "", accent: "" }
+      }).type === "div",
+      DartsUI.CricketPanel({
+        teams: [{ id: 1, name: "Red" }],
+        currentIdx: 0,
+        teamColors: ["#f00"],
+        cricketSectors: [20, 25],
+        cricketState: { 1: { 20: 1, "pts_20": 0, 25: 3, "pts_25": 25 } },
+        C: { card: "", surface: "", border: "", text: "", muted: "", accent: "" }
+      }).type === "div"
+    ];
+    var ok = checks.every(function(value) { return value; });
+    document.getElementById("output").textContent = ok ? "All UI tests passed" : "UI test failed";
+    if (!ok) throw new Error("UI regression failure");
+  </script>
+</body>
+</html>
