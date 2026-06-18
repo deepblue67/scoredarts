@@ -3,7 +3,7 @@
    Version : V20260611 18H30
 ══════════════════════════════════════════════════════════════════ */
 
-var APP_VERSION = "V20260618 10H44";
+var APP_VERSION = "V20260618 11H10";
 var CACHE_NAME  = "darts-cache-" + APP_VERSION;
 
 /* Ressources à mettre en cache au premier démarrage */
@@ -18,6 +18,7 @@ var PRECACHE_URLS = [
   "./ui.js",
   "./game01.js",
   "./game-cricket.js",
+  "./game-around.js",
   "./app.js",
   "./vendor/react.production.min.js",
   "./vendor/react-dom.production.min.js"

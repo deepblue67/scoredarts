@@ -34,6 +34,16 @@
         h("circle", { cx: 17, cy: 17, r: 2 })
       );
     }
+    if (name === "around") {
+      return h("svg", common,
+        h("circle", { cx: 12, cy: 12, r: 8 }),
+        h("path", { d: "M12 4v3" }),
+        h("path", { d: "M20 12h-3" }),
+        h("path", { d: "M12 20v-3" }),
+        h("path", { d: "M4 12h3" }),
+        h("path", { d: "M16.5 7.5 18 6v4h-4l1.5-1.5" })
+      );
+    }
     if (name === "chart") {
       return h("svg", common,
         h("path", { d: "M4 19h16" }),
@@ -688,7 +698,8 @@
     var teamColors = props.teamColors || [];
     var teams = saved.teams || [];
     var isCricket = saved.gameType === "cricket";
-    var label = isCricket ? "Cricket" : (saved.gameType || "301").toUpperCase();
+    var isAround = saved.gameType === "around";
+    var label = isCricket ? "Cricket" : isAround ? "Autour du monde" : (saved.gameType || "301").toUpperCase();
 
     return h("div", {
       style: {
@@ -702,7 +713,7 @@
         fontFamily: "Georgia,serif"
       }
     },
-      h(IconTile, { name: isCricket ? "cricket" : "target", C: C, size: 58, iconSize: 32 }),
+      h(IconTile, { name: isCricket ? "cricket" : isAround ? "around" : "target", C: C, size: 58, iconSize: 32 }),
       h("h1", {
         style: {
           color: C.accent,
@@ -737,7 +748,7 @@
       },
         h("div", {
           style: { color: C.accent, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }
-        }, isCricket ? "Etat des equipes" : "Scores actuels"),
+        }, isCricket ? "Etat des equipes" : isAround ? "Progression" : "Scores actuels"),
         teams.map(function(team, index) {
           var color = teamColors[index] || C.accent;
           return h("div", {
@@ -757,11 +768,11 @@
             h("span", {
               style: {
                 color: color,
-                fontSize: isCricket ? 13 : 22,
+                fontSize: isCricket || isAround ? 13 : 22,
                 fontWeight: "bold",
                 fontFamily: "monospace"
               }
-            }, isCricket ? "en cours" : team.score)
+            }, isCricket ? "en cours" : isAround ? (team.progress || 0) + " etapes" : team.score)
           );
         })
       ),
@@ -802,7 +813,7 @@
   function WinScreen(props) {
     var winner = props.winner, stats = props.stats, gameType = props.gameType;
     var onRestart = props.onRestart, onNewGame = props.onNewGame, onSameTeams = props.onSameTeams, C = props.C;
-    var avg = stats.totalThrows > 0 && gameType !== "cricket" ?
+    var avg = stats.totalThrows > 0 && gameType !== "cricket" && gameType !== "around" ?
       ((gameType === "501" ? 501 : 301) / stats.totalThrows * 3).toFixed(1) : "-";
     var items = [
       { label: "Tours joues", value: stats.rounds },
@@ -824,7 +835,7 @@
       }
     },
       h("div", { className: "spin-win", style: { marginBottom: 12 } },
-        h(IconTile, { name: gameType === "cricket" ? "cricket" : "target", C: C, size: 76, iconSize: 42 })
+        h(IconTile, { name: gameType === "cricket" ? "cricket" : gameType === "around" ? "around" : "target", C: C, size: 76, iconSize: 42 })
       ),
       h("h1", {
         className: "slide-up",
@@ -1065,12 +1076,14 @@
     var onClearHistory = props.onClearHistory;
     var summary = [
       { label: "Parties", value: games.length },
-      { label: "301/501", value: games.filter(function(game) { return game.gameType !== "cricket"; }).length },
-      { label: "Cricket", value: games.filter(function(game) { return game.gameType === "cricket"; }).length }
+      { label: "301/501", value: games.filter(function(game) { return game.gameType !== "cricket" && game.gameType !== "around"; }).length },
+      { label: "Cricket", value: games.filter(function(game) { return game.gameType === "cricket"; }).length },
+      { label: "Monde", value: games.filter(function(game) { return game.gameType === "around"; }).length }
     ];
 
     function gameLabel(game) {
       if (game.gameType === "cricket") return "Cricket";
+      if (game.gameType === "around") return "Monde";
       if (game.gameType === "501") return "501";
       return "301";
     }
@@ -1152,7 +1165,7 @@
                         borderRadius: 20
                       }
                     }, gameLabel(game)),
-                    game.rule && game.gameType !== "cricket"
+                    game.rule && game.gameType !== "cricket" && game.gameType !== "around"
                       ? h("div", {
                         style: { color: C.muted, fontSize: 11, background: C.card, padding: "3px 10px", borderRadius: 20 }
                       }, game.rule === "doubleout" ? "D.Out" : "Simple")
@@ -1181,7 +1194,7 @@
                     ),
                     h("div", { style: { textAlign: "right" } },
                       h("div", { style: { color: isWinner ? C.green : C.muted, fontSize: 13, fontFamily: "monospace" } },
-                        isWinner ? "VICTOIRE" : game.gameType === "cricket" ? team.score + " pts" : team.score + " restants"
+                        isWinner ? "VICTOIRE" : game.gameType === "cricket" ? team.score + " pts" : game.gameType === "around" ? (team.progress || 0) + " etapes" : team.score + " restants"
                       ),
                       team.avgPerTurn ? h("div", { style: { color: C.muted, fontSize: 11 } }, "moy " + team.avgPerTurn) : null
                     )
@@ -1215,7 +1228,8 @@
     var games = [
       { key: "301", icon: "target", title: "301", desc: "Partez de 301, descendez a 0" },
       { key: "501", icon: "target", title: "501", desc: "Partez de 501, descendez a 0" },
-      { key: "cricket", icon: "cricket", title: "Cricket", desc: "Fermez les secteurs 15-20 et Bull" }
+      { key: "cricket", icon: "cricket", title: "Cricket", desc: "Fermez les secteurs 15-20 et Bull" },
+      { key: "around", icon: "around", title: "Autour du monde", desc: "Touchez les numeros dans l'ordre" }
     ];
 
     return h("div", {
@@ -1315,6 +1329,7 @@
     var initialTeams = props.initialTeams || [{ id: 1, name: "Equipe Rouge" }, { id: 2, name: "Equipe Bleue" }];
     var onSaveTeams = props.onSaveTeams || function() {};
     var is301or501 = gameType === "301" || gameType === "501";
+    var isAround = gameType === "around";
     var initNextId = initialTeams.reduce(function(maxId, team) { return team.id > maxId ? team.id : maxId; }, 0) + 1;
     var teamsState = React.useState(initialTeams);
     var teams = teamsState[0], setTeams = teamsState[1];
@@ -1322,8 +1337,14 @@
     var nextId = nextIdState[0], setNextId = nextIdState[1];
     var ruleState = React.useState("simple");
     var rule = ruleState[0], setRule = ruleState[1];
-    var gameLabel = gameType === "cricket" ? "Cricket" : gameType;
-    var gameIcon = gameType === "cricket" ? "cricket" : "target";
+    var gameLabel = gameType === "cricket" ? "Cricket" : isAround ? "Autour du monde" : gameType;
+    var gameIcon = gameType === "cricket" ? "cricket" : isAround ? "around" : "target";
+    var aroundDirectionState = React.useState("asc");
+    var aroundDirection = aroundDirectionState[0], setAroundDirection = aroundDirectionState[1];
+    var aroundBullState = React.useState("inner");
+    var aroundBull = aroundBullState[0], setAroundBull = aroundBullState[1];
+    var aroundSegmentState = React.useState("any");
+    var aroundSegment = aroundSegmentState[0], setAroundSegment = aroundSegmentState[1];
 
     function addTeam() {
       if (teams.length >= 8) return;
@@ -1354,7 +1375,12 @@
     }
     function handleStart() {
       onSaveTeams(teams);
-      onStart(teams, rule);
+      onStart(teams, isAround ? {
+        direction: aroundDirection,
+        includeBull: aroundBull !== "none",
+        bullMode: aroundBull === "none" ? "inner" : aroundBull,
+        segmentMode: aroundSegment
+      } : rule);
     }
 
     return h("div", {
@@ -1481,11 +1507,74 @@
           })
         )
       ) : null,
+      isAround ? h("div", {
+        style: { width: "100%", maxWidth: 400, background: C.surface, borderRadius: 16, padding: 18, border: "1px solid " + C.border, marginBottom: 12 }
+      },
+        h("h3", { style: { color: C.text, fontSize: 13, marginBottom: 12, letterSpacing: 2, textTransform: "uppercase" } }, "Parametres"),
+        h("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+          h("div", null,
+            h("div", { style: { color: C.muted, fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 } }, "Sens du jeu"),
+            h("div", { style: { display: "flex", gap: 8 } },
+              [
+                { value: "asc", label: "1 vers 20" },
+                { value: "desc", label: "20 vers 1" }
+              ].map(function(option) {
+                var active = aroundDirection === option.value;
+                return h("button", {
+                  key: option.value,
+                  onClick: function() { setAroundDirection(option.value); },
+                  style: { flex: 1, background: active ? C.card : C.inputBg, border: "2px solid " + (active ? C.accent : C.border), borderRadius: 10, padding: "10px 8px", color: active ? C.accent : C.text, fontWeight: active ? "bold" : "normal", cursor: "pointer", fontFamily: "Georgia,serif" }
+                }, option.label);
+              })
+            )
+          ),
+          h("div", null,
+            h("div", { style: { color: C.muted, fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 } }, "Segments acceptes"),
+            h("div", { style: { display: "flex", gap: 8 } },
+              [
+                { value: "any", label: "Tout segment" },
+                { value: "double", label: "Doubles seuls" }
+              ].map(function(option) {
+                var active = aroundSegment === option.value;
+                return h("button", {
+                  key: option.value,
+                  onClick: function() { setAroundSegment(option.value); },
+                  style: { flex: 1, background: active ? C.card : C.inputBg, border: "2px solid " + (active ? C.accent : C.border), borderRadius: 10, padding: "10px 8px", color: active ? C.accent : C.text, fontWeight: active ? "bold" : "normal", cursor: "pointer", fontFamily: "Georgia,serif" }
+                }, option.label);
+              })
+            )
+          ),
+          h("div", null,
+            h("div", { style: { color: C.muted, fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 } }, "Bulle finale"),
+            h("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 } },
+              [
+                { value: "none", label: "Sans bulle" },
+                { value: "inner", label: "Bull rouge" },
+                { value: "any", label: "Toute bulle" }
+              ].map(function(option) {
+                var active = aroundBull === option.value;
+                return h("button", {
+                  key: option.value,
+                  onClick: function() { setAroundBull(option.value); },
+                  style: { flex: 1, background: active ? C.card : C.inputBg, border: "2px solid " + (active ? C.accent : C.border), borderRadius: 10, padding: "10px 8px", color: active ? C.accent : C.text, fontWeight: active ? "bold" : "normal", cursor: "pointer", fontFamily: "Georgia,serif" }
+                }, option.label);
+              })
+            )
+          )
+        )
+      ) : null,
       h("div", {
         style: { width: "100%", maxWidth: 400, background: C.surface, borderRadius: 16, padding: 18, border: "1px solid " + C.border, marginBottom: 24 }
       },
         h("h3", { style: { color: C.accent, fontSize: 12, marginBottom: 10, letterSpacing: 2, textTransform: "uppercase" } }, "Regles " + gameLabel),
-        is301or501
+        isAround
+          ? h("div", { style: { color: C.muted, fontSize: 13, lineHeight: 1.8 } },
+            h("div", null, "Touchez chaque numero dans l'ordre choisi"),
+            h("div", null, "Simple, double ou triple valident le numero, sauf variante doubles"),
+            h("div", null, "3 lancers par tour"),
+            h("div", null, "La bulle finale peut etre activee ou retiree")
+          )
+          : is301or501
           ? h("div", { style: { color: C.muted, fontSize: 13, lineHeight: 1.8 } },
             h("div", null, "Depart a " + gameType + " points par equipe"),
             h("div", null, "3 lancers par tour"),

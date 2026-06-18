@@ -1,4 +1,4 @@
-var APP_VERSION = "V20260618 10H44";
+var APP_VERSION = "V20260618 11H10";
 var useState = React.useState;
 var useEffect = React.useEffect;
 var MAX_THROWS = 3;
@@ -348,6 +348,15 @@ function App() {
       return React.createElement(GameCricket, {
         C: C,
         initialTeams: gameTeams,
+        savedState: savedForGame,
+        onNewGame: goHome
+      });
+    }
+    if (gameType === "around") {
+      return React.createElement(GameAround, {
+        C: C,
+        initialTeams: gameTeams,
+        rule: gameRule,
         savedState: savedForGame,
         onNewGame: goHome
       });

@@ -2,13 +2,14 @@
 
 Application web/PWA de comptage de points pour flechettes.
 
-Version actuelle : `V20260618 10H44`
+Version actuelle : `V20260618 11H10`
 
 Cette application permet de jouer principalement aux modes :
 
 - `301`
 - `501`
 - `Cricket`
+- `Autour du monde`
 
 Le mode `301` est devenu le mode prioritaire de l'application : l'interface a ete retravaillee pour mettre en avant le score restant, le checkout conseille, le surlignage de la cible et un affichage adapte PC/iPhone/iPad.
 
@@ -57,6 +58,7 @@ ScoreDarts/
   storage.js
   game01.js
   game-cricket.js
+  game-around.js
   sw.js
   manifest.json
   README.md
@@ -98,6 +100,7 @@ Ordre de chargement important :
 <script src="./ui.js"></script>
 <script src="./game01.js"></script>
 <script src="./game-cricket.js"></script>
+<script src="./game-around.js"></script>
 <script src="./app.js" defer></script>
 ```
 
@@ -118,7 +121,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 10H44";
+var APP_VERSION = "V20260618 11H10";
 ```
 
 Ecrans geres :
@@ -134,6 +137,7 @@ Modes lances depuis `App` :
 
 - `Game301` pour `301` et `501`
 - `GameCricket` pour Cricket
+- `GameAround` pour Autour du monde
 
 ### `game01.js`
 
@@ -187,6 +191,33 @@ Secteurs Cricket :
 ```
 
 Dans l'UI, `25` est affiche comme `Bull`.
+
+### `game-around.js`
+
+Role :
+
+- contient toute la logique UI et gameplay du mode `Autour du monde`
+- gere la progression des joueurs dans une sequence de cibles
+- gere le sens de jeu montant ou descendant
+- gere la variante `Doubles seuls`
+- gere la bulle finale optionnelle
+- sauvegarde automatiquement la partie en cours
+
+Parametres disponibles :
+
+- sens du jeu : `1 vers 20` ou `20 vers 1`
+- segments acceptes : `Tout segment` ou `Doubles seuls`
+- bulle finale : `Sans bulle`, `Bull rouge`, `Toute bulle`
+
+Exemples de sequences :
+
+```text
+1, 2, 3, ... 20, Bull
+20, 19, 18, ... 1, Bull
+1, 2, 3, ... 20
+```
+
+Le mode utilise aussi le surlignage de cible via `highlightTargets`.
 
 ### `ui.js`
 
@@ -310,7 +341,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 10H44";
+var APP_VERSION = "V20260618 11H10";
 ```
 
 Important :
@@ -399,6 +430,7 @@ Ces tests ne sont pas necessaires pour faire fonctionner l'application sur GitHu
    - `ui.js`
    - `game01.js`
    - `game-cricket.js`
+   - `game-around.js`
    - `app.js`
 4. `app.js` monte React dans :
 
@@ -568,6 +600,62 @@ Un joueur gagne s'il a :
 - ferme tous les secteurs
 - un score au moins egal aux autres joueurs
 
+## Mode Autour Du Monde
+
+### Objectif
+
+Le joueur doit faire le tour du plateau dans l'ordre choisi.
+
+Ordres possibles :
+
+- montant : `1 -> 20`
+- descendant : `20 -> 1`
+
+La bulle finale est configurable :
+
+- `Sans bulle`
+- `Bull rouge`
+- `Toute bulle`
+
+### Segments
+
+Deux variantes sont disponibles :
+
+- `Tout segment` : simple, double ou triple valident le numero
+- `Doubles seuls` : seul le double du numero valide la progression
+
+Pour la bulle :
+
+- `Bull rouge` demande la bulle interieure
+- `Toute bulle` accepte la bulle exterieure ou interieure
+
+### Tour De Jeu
+
+Chaque joueur lance 3 flechettes.
+
+Si la cible courante est touchee, le joueur avance immediatement a la cible suivante.
+
+Exemple :
+
+```text
+Cible courante : 1
+Lancers : S1, T2, S3
+Progression : le joueur avance jusqu'a 3
+```
+
+Si une flechette touche un autre numero que la cible attendue, elle ne fait pas avancer.
+
+### Interface
+
+L'ecran affiche :
+
+- joueur actif
+- cible courante
+- progression
+- variante active
+- cible surlignee sur le plateau
+- historique court en paysage/PC
+
 ## Responsive Design
 
 L'application gere explicitement 5 contextes :
@@ -697,6 +785,7 @@ Fichiers et dossiers necessaires au fonctionnement :
 - `storage.js`
 - `game01.js`
 - `game-cricket.js`
+- `game-around.js`
 - `sw.js`
 - `manifest.json`
 - `assets/`
@@ -768,6 +857,8 @@ Des smoke tests Playwright ont ete faits sur :
 - 301 normal
 - 301 avec reprise a 40 points et `D20` conseille/surligne
 - Cricket
+- Autour du monde
+- Autour du monde sans bulle
 - PWA via serveur HTTP local
 - PC
 - iPhone portrait
@@ -789,7 +880,7 @@ Quand une modification fonctionnelle est livree, mettre a jour :
 Exemple :
 
 ```js
-var APP_VERSION = "V20260618 10H44";
+var APP_VERSION = "V20260618 11H10";
 ```
 
 Si la version du service worker ne change pas, GitHub Pages ou le navigateur peuvent continuer a servir une ancienne version depuis le cache.
@@ -817,6 +908,7 @@ Les modules communiquent via des variables globales :
 - `DartsUI`
 - `Game301`
 - `GameCricket`
+- `GameAround`
 - `App`
 
 L'ordre de chargement dans `index.html` est donc important.
@@ -860,6 +952,7 @@ Actions :
 - extraction de `game01.js`
 - extraction de `game-cricket.js`
 - extraction de `app.js`
+- ajout de `game-around.js` pour le mode Autour du monde
 
 ### Stabilisation
 
@@ -944,6 +1037,7 @@ Avant de modifier :
    - UI commune -> `ui.js`
    - mode 301/501 -> `game01.js`
    - Cricket -> `game-cricket.js`
+   - Autour du monde -> `game-around.js`
    - scoring pur -> `scoring.js`
    - stockage -> `storage.js`
    - responsive/PWA -> `index.html` ou `sw.js`
