@@ -1,4 +1,4 @@
-var APP_VERSION = "V20260618 11H10";
+var APP_VERSION = "V20260618 12H05";
 var useState = React.useState;
 var useEffect = React.useEffect;
 var MAX_THROWS = 3;
@@ -156,8 +156,11 @@ var CHECKOUT = {
   4: "D2",
   2: "D1"
 };
-function makeTheme(dark) {
-  return dark ? {
+var THEMES = [
+  {
+    id: "classic-dark",
+    label: "Classique nuit",
+    icon: "moon",
     bg: "#0d0f1a",
     surface: "#161928",
     card: "#1e2236",
@@ -167,14 +170,18 @@ function makeTheme(dark) {
     green: "#27c96f",
     red: "#e84545",
     text: "#f0f2ff",
-    muted: "#7b82a8",
+    muted: "#8b92b8",
     inputBg: "#1e2236",
     headerBg: "#161928",
     dartRed: "#cc2222",
     dartGreen: "#1a6b3a",
     dartBlack: "#111",
     dartCream: "#f5f0e0"
-  } : {
+  },
+  {
+    id: "classic-light",
+    label: "Classique clair",
+    icon: "sun",
     bg: "#f0f2f5",
     surface: "#ffffff",
     card: "#e8eaf0",
@@ -191,7 +198,190 @@ function makeTheme(dark) {
     dartGreen: "#1a6b3a",
     dartBlack: "#111",
     dartCream: "#f5f0e0"
-  };
+  },
+  {
+    id: "graphite",
+    label: "Graphite",
+    icon: "settings",
+    bg: "#101114",
+    surface: "#1b1d22",
+    card: "#252832",
+    border: "#3a3f4c",
+    accent: "#e6b450",
+    accentDim: "#a87924",
+    green: "#3ddc84",
+    red: "#ff5f5f",
+    text: "#f5f5f7",
+    muted: "#a2a7b3",
+    inputBg: "#252832",
+    headerBg: "#17191f",
+    dartRed: "#cc2222",
+    dartGreen: "#1a6b3a",
+    dartBlack: "#111",
+    dartCream: "#f5f0e0"
+  },
+  {
+    id: "ocean",
+    label: "Ocean",
+    icon: "target",
+    bg: "#061821",
+    surface: "#0d2633",
+    card: "#143545",
+    border: "#215265",
+    accent: "#35c2ff",
+    accentDim: "#1788b8",
+    green: "#4ade80",
+    red: "#fb7185",
+    text: "#e8f7ff",
+    muted: "#93b4c4",
+    inputBg: "#143545",
+    headerBg: "#0a202b",
+    dartRed: "#cc2222",
+    dartGreen: "#1a6b3a",
+    dartBlack: "#111",
+    dartCream: "#f5f0e0"
+  },
+  {
+    id: "forest",
+    label: "Foret",
+    icon: "around",
+    bg: "#08160f",
+    surface: "#10251a",
+    card: "#183522",
+    border: "#2c5a3a",
+    accent: "#a7f05a",
+    accentDim: "#6ea92f",
+    green: "#34d399",
+    red: "#f87171",
+    text: "#f0fff4",
+    muted: "#9bc2a6",
+    inputBg: "#183522",
+    headerBg: "#0d1d15",
+    dartRed: "#cc2222",
+    dartGreen: "#1a6b3a",
+    dartBlack: "#111",
+    dartCream: "#f5f0e0"
+  },
+  {
+    id: "cherry",
+    label: "Cerise",
+    icon: "target",
+    bg: "#1a0b13",
+    surface: "#28111d",
+    card: "#351828",
+    border: "#5a2942",
+    accent: "#ff5c8a",
+    accentDim: "#bd315c",
+    green: "#7ee787",
+    red: "#ff6b6b",
+    text: "#fff0f6",
+    muted: "#c99aaf",
+    inputBg: "#351828",
+    headerBg: "#22101a",
+    dartRed: "#cc2222",
+    dartGreen: "#1a6b3a",
+    dartBlack: "#111",
+    dartCream: "#f5f0e0"
+  },
+  {
+    id: "royal",
+    label: "Royal",
+    icon: "chart",
+    bg: "#100f24",
+    surface: "#1b1940",
+    card: "#26235a",
+    border: "#403b82",
+    accent: "#c6a5ff",
+    accentDim: "#8b68d6",
+    green: "#64d987",
+    red: "#ff6b8a",
+    text: "#f4f0ff",
+    muted: "#a9a1d6",
+    inputBg: "#26235a",
+    headerBg: "#171532",
+    dartRed: "#cc2222",
+    dartGreen: "#1a6b3a",
+    dartBlack: "#111",
+    dartCream: "#f5f0e0"
+  },
+  {
+    id: "solar",
+    label: "Solaire",
+    icon: "sun",
+    bg: "#231804",
+    surface: "#342509",
+    card: "#46330f",
+    border: "#71551f",
+    accent: "#ffd166",
+    accentDim: "#c7922b",
+    green: "#95d46a",
+    red: "#ff7b54",
+    text: "#fff6df",
+    muted: "#d6ba7d",
+    inputBg: "#46330f",
+    headerBg: "#2b1f08",
+    dartRed: "#cc2222",
+    dartGreen: "#1a6b3a",
+    dartBlack: "#111",
+    dartCream: "#f5f0e0"
+  },
+  {
+    id: "neon",
+    label: "Neon",
+    icon: "target",
+    bg: "#050711",
+    surface: "#0d1020",
+    card: "#151a31",
+    border: "#26325c",
+    accent: "#00f5d4",
+    accentDim: "#00a896",
+    green: "#00f5a0",
+    red: "#ff3d81",
+    text: "#ecfdfd",
+    muted: "#8aa1c7",
+    inputBg: "#151a31",
+    headerBg: "#090c19",
+    dartRed: "#cc2222",
+    dartGreen: "#1a6b3a",
+    dartBlack: "#111",
+    dartCream: "#f5f0e0"
+  },
+  {
+    id: "vintage",
+    label: "Vintage",
+    icon: "cricket",
+    bg: "#17130e",
+    surface: "#241d15",
+    card: "#30261b",
+    border: "#594632",
+    accent: "#d6a85c",
+    accentDim: "#9d7136",
+    green: "#84a66a",
+    red: "#c96b5c",
+    text: "#f7ecd8",
+    muted: "#b7a184",
+    inputBg: "#30261b",
+    headerBg: "#201910",
+    dartRed: "#cc2222",
+    dartGreen: "#1a6b3a",
+    dartBlack: "#111",
+    dartCream: "#f5f0e0"
+  }
+];
+function normalizeThemeId(value) {
+  if (value === true) return "classic-dark";
+  if (value === false) return "classic-light";
+  for (var i = 0; i < THEMES.length; i++) {
+    if (THEMES[i].id === value) return value;
+  }
+  return "classic-dark";
+}
+function makeTheme(themeId) {
+  var id = normalizeThemeId(themeId);
+  for (var i = 0; i < THEMES.length; i++) {
+    if (THEMES[i].id === id) return THEMES[i];
+  }
+  return THEMES[0];
 }
 function ls_get(k) {
   return DartsStorage.get(k);
@@ -204,8 +394,7 @@ function ls_del(k) {
 }
 function App() {
   var saved = ls_get(SAVE_KEY);
-  var isDark = ls_get(THEME_KEY);
-  if (isDark === null) isDark = true;
+  var savedTheme = normalizeThemeId(ls_get(THEME_KEY));
   var b1 = useState(saved ? "resume" : "home");
   var screen = b1[0],
     setScreen = b1[1];
@@ -218,9 +407,9 @@ function App() {
   var b4 = useState(null);
   var gameRule = b4[0],
     setGameRule = b4[1];
-  var b5 = useState(!!isDark);
-  var darkMode = b5[0],
-    setDarkMode = b5[1];
+  var b5 = useState(savedTheme);
+  var themeId = b5[0],
+    setThemeId = b5[1];
   var b6 = useState(null);
   var gameType = b6[0],
     setGameType = b6[1];
@@ -230,10 +419,10 @@ function App() {
   var b8 = useState(false);
   var showSettings = b8[0],
     setShowSettings = b8[1];
-  var C = makeTheme(darkMode);
+  var C = makeTheme(themeId);
   useEffect(function () {
     document.body.style.background = C.bg;
-  }, [darkMode]);
+  }, [themeId]);
   function goHome() {
     ls_del(SAVE_KEY);
     setSavedSt(null);
@@ -256,11 +445,13 @@ function App() {
   });
   if (showSettings) return React.createElement(DartsUI.SettingsScreen, {
     C: C,
-    darkMode: darkMode,
+    themeId: themeId,
+    themes: THEMES,
     version: APP_VERSION,
-    onSetDarkMode: function (value) {
-      setDarkMode(value);
-      ls_set(THEME_KEY, value);
+    onSetTheme: function (value) {
+      var nextTheme = normalizeThemeId(value);
+      setThemeId(nextTheme);
+      ls_set(THEME_KEY, nextTheme);
     },
     onClearHistory: function () {
       if (window.confirm("Effacer tout l'historique des parties ?")) ls_del(HISTORY_KEY);
@@ -298,16 +489,11 @@ function App() {
   if (screen === "home") {
     return React.createElement(DartsUI.HomeScreen, {
       C: C,
-      darkMode: darkMode,
       onShowStats: function () {
         setShowStats(true);
       },
       onShowSettings: function () {
         setShowSettings(true);
-      },
-      onToggleTheme: function () {
-        setDarkMode(!darkMode);
-        ls_set(THEME_KEY, !darkMode);
       },
       onSelect: function (type) {
         setGameType(type);
@@ -372,16 +558,11 @@ function App() {
   }
   return React.createElement(DartsUI.HomeScreen, {
     C: C,
-    darkMode: darkMode,
     onShowStats: function () {
       setShowStats(true);
     },
     onShowSettings: function () {
       setShowSettings(true);
-    },
-    onToggleTheme: function () {
-      setDarkMode(!darkMode);
-      ls_set(THEME_KEY, !darkMode);
     },
     onSelect: function (type) {
       setGameType(type);

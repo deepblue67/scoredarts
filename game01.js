@@ -277,6 +277,9 @@ function Game301(props) {
   });
   var aim = checkoutState();
   var recentTurns = history.slice(-3).reverse();
+  var otherTeams = teams.filter(function (item, index) {
+    return index !== currentIdx;
+  });
   var leftContent = React.createElement(React.Fragment, null, React.createElement(DartsUI.ScorePanel, {
     teams: teams,
     currentIdx: currentIdx,
@@ -402,7 +405,65 @@ function Game301(props) {
       textAlign: "center",
       fontStyle: "italic"
     }
-  }, "Double out requis - visez D" + projected / 2)), !boardDisabled && React.createElement("button", {
+  }, "Double out requis - visez D" + projected / 2)), otherTeams.length > 0 && React.createElement("div", {
+    className: "opponent-score-strip",
+    style: {
+      background: C.surface,
+      border: "1px solid " + C.border,
+      borderRadius: 12,
+      padding: "9px 10px",
+      display: "none",
+      gap: 8,
+      overflowX: "auto"
+    }
+  }, otherTeams.map(function (other) {
+    var realIndex = teams.findIndex(function (item) {
+      return item.id === other.id;
+    });
+    var color = TEAM_COLORS[realIndex] || C.accent;
+    return React.createElement("div", {
+      key: other.id,
+      style: {
+        flex: "0 0 auto",
+        minWidth: 96,
+        background: C.card,
+        border: "1px solid " + C.border,
+        borderRadius: 10,
+        padding: "7px 9px"
+      }
+    }, React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        marginBottom: 3
+      }
+    }, React.createElement("span", {
+      style: {
+        width: 7,
+        height: 7,
+        borderRadius: "50%",
+        background: color,
+        flexShrink: 0
+      }
+    }), React.createElement("span", {
+      style: {
+        color: C.muted,
+        fontSize: 10,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap"
+      }
+    }, other.name)), React.createElement("div", {
+      style: {
+        color: C.text,
+        fontSize: 17,
+        fontWeight: "bold",
+        fontFamily: "monospace",
+        lineHeight: 1
+      }
+    }, other.score));
+  })), !boardDisabled && React.createElement("button", {
     className: "miss-button",
     onClick: function () {
       handleScore({

@@ -2,7 +2,7 @@
 
 Application web/PWA de comptage de points pour flechettes.
 
-Version actuelle : `V20260618 11H10`
+Version actuelle : `V20260618 12H05`
 
 Cette application permet de jouer principalement aux modes :
 
@@ -45,6 +45,7 @@ Les objectifs prioritaires qui ont ete traites :
 - supprimer Babel au runtime
 - rendre React local au projet
 - ameliorer le mode `301`
+- ajouter une selection de 10 themes dans les reglages
 - verifier les 5 layouts principaux : PC, iPhone portrait, iPhone paysage, iPad portrait, iPad paysage
 
 ## Structure Du Projet
@@ -113,7 +114,7 @@ Role :
 - contient la racine React `App`
 - gere les ecrans principaux
 - gere la navigation interne
-- gere le theme clair/sombre
+- gere le theme visuel actif
 - gere la reprise d'une partie sauvegardee
 - declare la version courante de l'application
 - declare les constantes globales partagees
@@ -121,7 +122,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 11H10";
+var APP_VERSION = "V20260618 12H05";
 ```
 
 Ecrans geres :
@@ -138,6 +139,15 @@ Modes lances depuis `App` :
 - `Game301` pour `301` et `501`
 - `GameCricket` pour Cricket
 - `GameAround` pour Autour du monde
+
+Themes :
+
+- les themes sont declares dans `THEMES` dans `app.js`
+- `makeTheme(themeId)` renvoie la palette active
+- `normalizeThemeId(value)` garde la compatibilite avec les anciennes valeurs `true`/`false`
+- la page d'accueil ne propose plus de bouton clair/sombre
+- le choix de theme se fait dans `SettingsScreen`
+- les themes actuels sont : Classique nuit, Classique clair, Graphite, Ocean, Foret, Cerise, Royal, Solaire, Neon, Vintage
 
 ### `game01.js`
 
@@ -309,6 +319,16 @@ TEAMS: "darts_teams"
 THEME: "darts_theme"
 ```
 
+`THEME` stocke l'identifiant du theme actif, par exemple :
+
+```js
+"classic-dark"
+"ocean"
+"neon"
+```
+
+Les anciennes valeurs booleennes `true` et `false` restent interpretees pour compatibilite : `true` renvoie vers `classic-dark`, `false` vers `classic-light`.
+
 La sauvegarde de partie est enveloppee avec :
 
 ```js
@@ -341,7 +361,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 11H10";
+var APP_VERSION = "V20260618 12H05";
 ```
 
 Important :
@@ -880,7 +900,7 @@ Quand une modification fonctionnelle est livree, mettre a jour :
 Exemple :
 
 ```js
-var APP_VERSION = "V20260618 11H10";
+var APP_VERSION = "V20260618 12H05";
 ```
 
 Si la version du service worker ne change pas, GitHub Pages ou le navigateur peuvent continuer a servir une ancienne version depuis le cache.

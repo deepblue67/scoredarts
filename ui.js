@@ -929,13 +929,10 @@
   }
 
   function SettingsScreen(props) {
-    var onClose = props.onClose, C = props.C, darkMode = props.darkMode;
-    var onSetDarkMode = props.onSetDarkMode, onClearHistory = props.onClearHistory, onClearSave = props.onClearSave;
+    var onClose = props.onClose, C = props.C, themeId = props.themeId;
+    var onSetTheme = props.onSetTheme, onClearHistory = props.onClearHistory, onClearSave = props.onClearSave;
     var version = props.version;
-    var themes = [
-      { value: true, icon: "moon", label: "Sombre" },
-      { value: false, icon: "sun", label: "Clair" }
-    ];
+    var themes = props.themes || [];
 
     function dataButton(label, description, icon, onClick) {
       return h("button", {
@@ -1017,27 +1014,59 @@
           h("div", {
             style: { color: C.accent, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", marginBottom: 14 }
           }, "Apparence"),
-          h("div", { style: { display: "flex", gap: 10 } },
+          h("div", { style: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 } },
             themes.map(function(option) {
-              var active = darkMode === option.value;
+              var active = themeId === option.id;
               return h("div", {
-                key: "" + option.value,
-                onClick: function() { onSetDarkMode(option.value); },
+                key: option.id,
+                onClick: function() { onSetTheme(option.id); },
                 style: {
-                  flex: 1,
                   background: active ? C.card : C.inputBg,
                   border: "2px solid " + (active ? C.accent : C.border),
                   borderRadius: 12,
-                  padding: "14px 10px",
-                  textAlign: "center",
+                  padding: "12px 10px",
                   cursor: "pointer",
-                  transition: "all 0.2s"
+                  transition: "all 0.2s",
+                  minWidth: 0
                 }
               },
-                h("div", { style: { display: "flex", justifyContent: "center", color: active ? C.accent : C.muted, marginBottom: 6 } },
-                  h(Icon, { name: option.icon, C: C, size: 18, color: active ? C.accent : C.muted })
+                h("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 } },
+                  h("div", {
+                    style: {
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      background: option.surface,
+                      border: "1px solid " + option.border,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flex: "0 0 auto"
+                    }
+                  }, h(Icon, { name: option.icon, C: C, size: 15, color: option.accent })),
+                  h("div", {
+                    style: {
+                      color: active ? C.accent : C.text,
+                      fontSize: 12,
+                      fontWeight: "bold",
+                      lineHeight: 1.2,
+                      minWidth: 0
+                    }
+                  }, option.label)
                 ),
-                h("div", { style: { color: active ? C.accent : C.muted, fontSize: 13, fontWeight: active ? "bold" : "normal" } }, option.label)
+                h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 } },
+                  [option.bg, option.card, option.accent].map(function(color, colorIndex) {
+                    return h("div", {
+                      key: option.id + "-swatch-" + colorIndex,
+                      style: {
+                        height: 14,
+                        borderRadius: 5,
+                        background: color,
+                        border: "1px solid " + option.border
+                      }
+                    });
+                  })
+                )
               );
             })
           )
@@ -1223,8 +1252,8 @@
   }
 
   function HomeScreen(props) {
-    var onSelect = props.onSelect, C = props.C, darkMode = props.darkMode;
-    var onShowStats = props.onShowStats, onShowSettings = props.onShowSettings, onToggleTheme = props.onToggleTheme;
+    var onSelect = props.onSelect, C = props.C;
+    var onShowStats = props.onShowStats, onShowSettings = props.onShowSettings;
     var games = [
       { key: "301", icon: "target", title: "301", desc: "Partez de 301, descendez a 0" },
       { key: "501", icon: "target", title: "501", desc: "Partez de 501, descendez a 0" },
@@ -1266,12 +1295,7 @@
           onClick: onShowSettings,
           title: "Reglages",
           style: { background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "7px 10px", color: C.muted, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }
-        }, h(Icon, { name: "settings", C: C, size: 16, color: C.muted }), h("span", { style: { fontSize: 12 } }, "Reglages")),
-        h("button", {
-          onClick: onToggleTheme,
-          title: darkMode ? "Passer en theme clair" : "Passer en theme sombre",
-          style: { background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "7px 10px", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }
-        }, h(Icon, { name: darkMode ? "sun" : "moon", C: C, size: 16, color: C.text }), h("span", { style: { fontSize: 12 } }, darkMode ? "Clair" : "Sombre"))
+        }, h(Icon, { name: "settings", C: C, size: 16, color: C.muted }), h("span", { style: { fontSize: 12 } }, "Reglages"))
       ),
       h("div", { style: { marginBottom: 36, textAlign: "center" } },
         h("div", { style: { display: "flex", justifyContent: "center", marginBottom: 12 } },
