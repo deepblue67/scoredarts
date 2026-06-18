@@ -2,7 +2,7 @@
 
 Application web/PWA de comptage de points pour flechettes.
 
-Version actuelle : `V20260618 09H56`
+Version actuelle : `V20260618 10H44`
 
 Cette application permet de jouer principalement aux modes :
 
@@ -118,7 +118,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 09H56";
+var APP_VERSION = "V20260618 10H44";
 ```
 
 Ecrans geres :
@@ -310,7 +310,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 09H56";
+var APP_VERSION = "V20260618 10H44";
 ```
 
 Important :
@@ -789,7 +789,7 @@ Quand une modification fonctionnelle est livree, mettre a jour :
 Exemple :
 
 ```js
-var APP_VERSION = "V20260618 09H56";
+var APP_VERSION = "V20260618 10H44";
 ```
 
 Si la version du service worker ne change pas, GitHub Pages ou le navigateur peuvent continuer a servir une ancienne version depuis le cache.

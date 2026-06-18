@@ -3,6 +3,116 @@
     return React.createElement.apply(React, arguments);
   }
 
+  function Icon(props) {
+    var name = props.name;
+    var C = props.C || {};
+    var size = props.size || 22;
+    var color = props.color || C.accent || "currentColor";
+    var common = {
+      width: size,
+      height: size,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: color,
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      style: { display: "block", flexShrink: 0 }
+    };
+    if (name === "target") {
+      return h("svg", common,
+        h("circle", { cx: 12, cy: 12, r: 9 }),
+        h("circle", { cx: 12, cy: 12, r: 5 }),
+        h("circle", { cx: 12, cy: 12, r: 1.5, fill: color, stroke: "none" })
+      );
+    }
+    if (name === "cricket") {
+      return h("svg", common,
+        h("path", { d: "M5 19L19 5" }),
+        h("path", { d: "M15 5h4v4" }),
+        h("path", { d: "M5 15l4 4" }),
+        h("circle", { cx: 17, cy: 17, r: 2 })
+      );
+    }
+    if (name === "chart") {
+      return h("svg", common,
+        h("path", { d: "M4 19h16" }),
+        h("path", { d: "M7 16V9" }),
+        h("path", { d: "M12 16V5" }),
+        h("path", { d: "M17 16v-4" })
+      );
+    }
+    if (name === "settings") {
+      return h("svg", common,
+        h("circle", { cx: 12, cy: 12, r: 3 }),
+        h("path", { d: "M12 2v3" }),
+        h("path", { d: "M12 19v3" }),
+        h("path", { d: "M4.9 4.9l2.1 2.1" }),
+        h("path", { d: "M17 17l2.1 2.1" }),
+        h("path", { d: "M2 12h3" }),
+        h("path", { d: "M19 12h3" }),
+        h("path", { d: "M4.9 19.1L7 17" }),
+        h("path", { d: "M17 7l2.1-2.1" })
+      );
+    }
+    if (name === "sun") {
+      return h("svg", common,
+        h("circle", { cx: 12, cy: 12, r: 4 }),
+        h("path", { d: "M12 2v2" }),
+        h("path", { d: "M12 20v2" }),
+        h("path", { d: "M4.9 4.9l1.4 1.4" }),
+        h("path", { d: "M17.7 17.7l1.4 1.4" }),
+        h("path", { d: "M2 12h2" }),
+        h("path", { d: "M20 12h2" }),
+        h("path", { d: "M4.9 19.1l1.4-1.4" }),
+        h("path", { d: "M17.7 6.3l1.4-1.4" })
+      );
+    }
+    if (name === "moon") {
+      return h("svg", common,
+        h("path", { d: "M21 12.8A8 8 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z" })
+      );
+    }
+    if (name === "grip") {
+      return h("svg", common,
+        [6, 12, 18].map(function(y) {
+          return [9, 15].map(function(x) {
+            return h("circle", { key: x + "-" + y, cx: x, cy: y, r: 1.1, fill: color, stroke: "none" });
+          });
+        })
+      );
+    }
+    if (name === "plus") {
+      return h("svg", common, h("path", { d: "M12 5v14" }), h("path", { d: "M5 12h14" }));
+    }
+    if (name === "trash") {
+      return h("svg", common, h("path", { d: "M4 7h16" }), h("path", { d: "M10 11v6" }), h("path", { d: "M14 11v6" }), h("path", { d: "M6 7l1 14h10l1-14" }), h("path", { d: "M9 7V4h6v3" }));
+    }
+    if (name === "save") {
+      return h("svg", common, h("path", { d: "M5 3h12l2 2v16H5Z" }), h("path", { d: "M8 3v6h8" }), h("path", { d: "M8 17h8" }));
+    }
+    return h("svg", common, h("circle", { cx: 12, cy: 12, r: 9 }));
+  }
+
+  function IconTile(props) {
+    var C = props.C;
+    return h("div", {
+      style: {
+        width: props.size || 42,
+        height: props.size || 42,
+        borderRadius: 12,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: C.card,
+        border: "1px solid " + C.border,
+        color: C.accent,
+        boxShadow: "inset 0 0 0 1px " + C.accent + "18",
+        flexShrink: 0
+      }
+    }, h(Icon, { name: props.name, C: C, size: props.iconSize || 23 }));
+  }
+
   function DartBoard(props) {
     var onScore = props.onScore, disabled = props.disabled, C = props.C;
     var highlightSectors = props.highlightSectors || null;
@@ -592,7 +702,7 @@
         fontFamily: "Georgia,serif"
       }
     },
-      h("div", { style: { fontSize: 52, marginBottom: 16 } }, isCricket ? "CR" : "01"),
+      h(IconTile, { name: isCricket ? "cricket" : "target", C: C, size: 58, iconSize: 32 }),
       h("h1", {
         style: {
           color: C.accent,
@@ -713,7 +823,9 @@
         fontFamily: "Georgia,serif"
       }
     },
-      h("div", { className: "spin-win", style: { fontSize: 76, marginBottom: 12 } }, gameType === "cricket" ? "CR" : "01"),
+      h("div", { className: "spin-win", style: { marginBottom: 12 } },
+        h(IconTile, { name: gameType === "cricket" ? "cricket" : "target", C: C, size: 76, iconSize: 42 })
+      ),
       h("h1", {
         className: "slide-up",
         style: {
@@ -810,8 +922,8 @@
     var onSetDarkMode = props.onSetDarkMode, onClearHistory = props.onClearHistory, onClearSave = props.onClearSave;
     var version = props.version;
     var themes = [
-      { value: true, icon: "Dark", label: "Sombre" },
-      { value: false, icon: "Light", label: "Clair" }
+      { value: true, icon: "moon", label: "Sombre" },
+      { value: false, icon: "sun", label: "Clair" }
     ];
 
     function dataButton(label, description, icon, onClick) {
@@ -832,7 +944,7 @@
           gap: 10
         }
       },
-        h("span", { style: { fontSize: 14, color: C.accent, minWidth: 38 } }, icon),
+        h(Icon, { name: icon, C: C, size: 18, color: C.accent }),
         h("div", null,
           h("div", { style: { color: C.text, fontSize: 13, fontWeight: "bold" } }, label),
           h("div", { style: { color: C.muted, fontSize: 11, marginTop: 2 } }, description)
@@ -911,7 +1023,9 @@
                   transition: "all 0.2s"
                 }
               },
-                h("div", { style: { color: active ? C.accent : C.muted, fontSize: 12, marginBottom: 4 } }, option.icon),
+                h("div", { style: { display: "flex", justifyContent: "center", color: active ? C.accent : C.muted, marginBottom: 6 } },
+                  h(Icon, { name: option.icon, C: C, size: 18, color: active ? C.accent : C.muted })
+                ),
                 h("div", { style: { color: active ? C.accent : C.muted, fontSize: 13, fontWeight: active ? "bold" : "normal" } }, option.label)
               );
             })
@@ -924,8 +1038,8 @@
             style: { color: C.accent, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", marginBottom: 14 }
           }, "Donnees"),
           h("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
-            dataButton("Effacer l'historique", "Supprime toutes les parties enregistrees", "Stats", onClearHistory),
-            dataButton("Effacer la partie sauvegardee", "Annule la reprise de partie en cours", "Save", onClearSave)
+            dataButton("Effacer l'historique", "Supprime toutes les parties enregistrees", "chart", onClearHistory),
+            dataButton("Effacer la partie sauvegardee", "Annule la reprise de partie en cours", "save", onClearSave)
           )
         ),
         h("div", {
@@ -1099,9 +1213,9 @@
     var onSelect = props.onSelect, C = props.C, darkMode = props.darkMode;
     var onShowStats = props.onShowStats, onShowSettings = props.onShowSettings, onToggleTheme = props.onToggleTheme;
     var games = [
-      { key: "301", icon: "01", title: "301", desc: "Partez de 301, descendez a 0" },
-      { key: "501", icon: "01", title: "501", desc: "Partez de 501, descendez a 0" },
-      { key: "cricket", icon: "CR", title: "Cricket", desc: "Fermez les secteurs 15-20 et Bull" }
+      { key: "301", icon: "target", title: "301", desc: "Partez de 301, descendez a 0" },
+      { key: "501", icon: "target", title: "501", desc: "Partez de 501, descendez a 0" },
+      { key: "cricket", icon: "cricket", title: "Cricket", desc: "Fermez les secteurs 15-20 et Bull" }
     ];
 
     return h("div", {
@@ -1131,19 +1245,24 @@
       },
         h("button", {
           onClick: onShowStats,
-          style: { background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "6px 14px", color: C.muted, fontSize: 12, cursor: "pointer" }
-        }, "Stats"),
+          title: "Statistiques",
+          style: { background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "7px 10px", color: C.muted, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }
+        }, h(Icon, { name: "chart", C: C, size: 16, color: C.muted }), h("span", { style: { fontSize: 12 } }, "Stats")),
         h("button", {
           onClick: onShowSettings,
-          style: { background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "6px 14px", color: C.muted, fontSize: 12, cursor: "pointer" }
-        }, "Reglages"),
+          title: "Reglages",
+          style: { background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "7px 10px", color: C.muted, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }
+        }, h(Icon, { name: "settings", C: C, size: 16, color: C.muted }), h("span", { style: { fontSize: 12 } }, "Reglages")),
         h("button", {
           onClick: onToggleTheme,
-          style: { background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "6px 14px", color: C.text, fontSize: 12, cursor: "pointer" }
-        }, darkMode ? "Clair" : "Sombre")
+          title: darkMode ? "Passer en theme clair" : "Passer en theme sombre",
+          style: { background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "7px 10px", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }
+        }, h(Icon, { name: darkMode ? "sun" : "moon", C: C, size: 16, color: C.text }), h("span", { style: { fontSize: 12 } }, darkMode ? "Clair" : "Sombre"))
       ),
       h("div", { style: { marginBottom: 36, textAlign: "center" } },
-        h("div", { style: { fontSize: 42, marginBottom: 8, color: C.accent, fontWeight: "bold" } }, "DARTS"),
+        h("div", { style: { display: "flex", justifyContent: "center", marginBottom: 12 } },
+          h(IconTile, { name: "target", C: C, size: 58, iconSize: 32 })
+        ),
         h("h1", {
           style: {
             color: C.accent,
@@ -1178,7 +1297,7 @@
               fontFamily: "Georgia,serif"
             }
           },
-            h("div", { style: { fontSize: 18, flexShrink: 0, color: C.accent, fontWeight: "bold", minWidth: 36 } }, game.icon),
+            h(IconTile, { name: game.icon, C: C, size: 42, iconSize: 24 }),
             h("div", { style: { flex: 1, minWidth: 0 } },
               h("div", { style: { color: C.text, fontSize: 20, fontWeight: "bold", letterSpacing: 2 } }, game.title),
               h("div", { style: { color: C.muted, fontSize: 13, marginTop: 2 } }, game.desc)
@@ -1204,6 +1323,7 @@
     var ruleState = React.useState("simple");
     var rule = ruleState[0], setRule = ruleState[1];
     var gameLabel = gameType === "cricket" ? "Cricket" : gameType;
+    var gameIcon = gameType === "cricket" ? "cricket" : "target";
 
     function addTeam() {
       if (teams.length >= 8) return;
@@ -1256,7 +1376,9 @@
         }, "Retour")
       ),
       h("div", { style: { marginBottom: 24, textAlign: "center" } },
-        h("div", { style: { fontSize: 36, marginBottom: 6, color: C.accent, fontWeight: "bold" } }, gameLabel),
+        h("div", { style: { display: "flex", justifyContent: "center", marginBottom: 10 } },
+          h(IconTile, { name: gameIcon, C: C, size: 52, iconSize: 28 })
+        ),
         h("h1", { style: { color: C.accent, fontSize: 28, fontWeight: "bold", letterSpacing: 4, margin: 0, textTransform: "uppercase" } }, gameLabel)
       ),
       h("div", {
@@ -1285,7 +1407,9 @@
               position: "relative"
             }
           },
-            h("div", { style: { color: C.muted, fontSize: 18, cursor: "grab", flexShrink: 0, padding: "0 2px", touchAction: "none" } }, "::"),
+            h("div", { style: { color: C.muted, cursor: "grab", flexShrink: 0, padding: "0 2px", touchAction: "none" } },
+              h(Icon, { name: "grip", C: C, size: 18, color: C.muted })
+            ),
             h("div", { style: { width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0 } }),
             h("input", {
               value: team.name,
@@ -1322,7 +1446,10 @@
             letterSpacing: 1,
             fontFamily: "Georgia,serif"
           }
-        }, "+ Ajouter une equipe") : null
+        }, h("span", { style: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 } },
+          h(Icon, { name: "plus", C: C, size: 15, color: C.muted }),
+          h("span", null, "Ajouter une equipe")
+        )) : null
       ),
       is301or501 ? h("div", {
         style: { width: "100%", maxWidth: 400, background: C.surface, borderRadius: 16, padding: 18, border: "1px solid " + C.border, marginBottom: 12 }

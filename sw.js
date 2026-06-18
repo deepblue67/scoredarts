@@ -3,7 +3,7 @@
    Version : V20260611 18H30
 ══════════════════════════════════════════════════════════════════ */
 
-var APP_VERSION = "V20260618 09H56";
+var APP_VERSION = "V20260618 10H44";
 var CACHE_NAME  = "darts-cache-" + APP_VERSION;
 
 /* Ressources à mettre en cache au premier démarrage */

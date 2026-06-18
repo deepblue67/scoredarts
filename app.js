@@ -1,4 +1,4 @@
-var APP_VERSION = "V20260618 09H56";
+var APP_VERSION = "V20260618 10H44";
 var useState = React.useState;
 var useEffect = React.useEffect;
 var MAX_THROWS = 3;
