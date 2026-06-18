@@ -25,6 +25,16 @@ Il doit permettre :
 - de reprendre plus facilement le projet plus tard
 - de permettre a Codex de retrouver rapidement le contexte lors d'une future session de maintenance
 
+A partir de maintenant, ce README est le carnet de bord officiel du projet.
+
+A chaque evolution, il faut mettre a jour :
+
+- la description de ce qui existe
+- la version documentee
+- le nombre de tests si le contenu des tests change
+- l'historique des evolutions
+- les tableaux de suivi en fin de fichier
+
 ## Etat General De La Refonte
 
 L'application etait initialement concentree dans peu de fichiers. Elle a ete refactorisee en plusieurs modules plus lisibles :
@@ -837,6 +847,13 @@ Pousser tout le contenu du dossier ScoreDarts.
 
 ## Tests
 
+Nombre actuel de controles de regression documentes :
+
+- scoring : 8 assertions
+- stockage : 7 assertions
+- UI : 31 checks
+- total : 46 controles
+
 ### Tests De Scoring
 
 Commande :
@@ -1105,4 +1122,75 @@ Pour deployer :
 ```text
 Pousser tout le dossier ScoreDarts sur GitHub.
 ```
+
+## Carnet De Bord Et Tableau De Suivi
+
+Cette section doit etre tenue a jour a chaque evolution du projet.
+
+Statuts utilises :
+
+- `Fait` : implemente et verifie
+- `A faire` : prochaine evolution prioritaire ou clairement identifiee
+- `Moyen terme` : interessant, mais pas prioritaire immediatement
+- `A eviter pour l'instant` : possible techniquement, mais trop lourd ou premature
+
+### Technique Et Architecture
+
+| Sujet | Description | Statut | Priorite | Version / remarque |
+|---|---|---:|---:|---|
+| Audit initial | Analyse de l'application initiale, identification des risques de stabilite, maintenance, PWA, responsive et tests. | Fait | Haute | Base de la refonte |
+| Modularisation | Separation en modules : `app.js`, `ui.js`, `scoring.js`, `storage.js`, `game01.js`, `game-cricket.js`, `game-around.js`. | Fait | Haute | Refactorisation principale |
+| Suppression de Babel runtime | Suppression du chargement `type="text/babel"` et passage a du JavaScript directement executable. | Fait | Haute | Stabilite locale et GitHub Pages |
+| React local | Ajout de React et ReactDOM dans `vendor/` pour eviter une dependance CDN. | Fait | Haute | Fonctionnement plus robuste hors ligne |
+| Stockage centralise | Creation de `DartsStorage`, cles centralisees, compatibilite avec anciennes sauvegardes, schema versionne. | Fait | Haute | `storage.js` |
+| Scoring pur | Creation de `DartsScoring` pour isoler les calculs 01 et Cricket de l'UI. | Fait | Haute | `scoring.js` |
+| Service Worker | Cache PWA versionne, precache des fichiers, activation de mise a jour via `SKIP_WAITING`. | Fait | Haute | `sw.js` |
+| Manifest PWA | Ajout de `manifest.json`, icones et compatibilite installation mobile. | Fait | Haute | `assets/` + `manifest.json` |
+| Gestion versions | Synchronisation de `APP_VERSION` dans `app.js`, `sw.js` et README. | Fait | Haute | Derniere version : `V20260618 13H05` |
+| Tests scoring | Regression scoring pour 01 et Cricket. | Fait | Haute | 8 assertions |
+| Tests stockage | Regression stockage pour sauvegardes anciennes, wrapping, schema et suppression. | Fait | Haute | 7 assertions |
+| Tests UI | Regression de presence des composants `DartsUI`. | Fait | Haute | 31 checks |
+| Smoke tests responsive | Verification manuelle/Playwright sur PC, iPhone portrait/paysage, iPad portrait/paysage. | Fait | Haute | A refaire apres gros changements UI |
+| Media queries ciblees | Gestion explicite des 5 contextes : PC, iPhone portrait, iPhone paysage, iPad portrait, iPad paysage. | Fait | Haute | `index.html` |
+| Icones PWA/UI | Restauration et centralisation d'icones SVG dans `ui.js`, icones PWA dans `assets/`. | Fait | Moyenne | Corrige la perte d'icones mobile |
+| Themes visuels | Selection de 10 themes dans les reglages, stockage via `darts_theme`, compatibilite `true/false`. | Fait | Moyenne | `V20260618 12H05` |
+| Lisibilite themes | Renforcement des bordures, surfaces et textes secondaires sur les 10 themes. | Fait | Haute | `V20260618 13H05` |
+| README carnet de bord | Le README devient la source officielle de reprise projet, avec historique et tableaux de suivi. | Fait | Haute | A maintenir a chaque evolution |
+| Tests autour du monde | Ajouter des tests automatiques dedies au mode `Autour du monde`. | A faire | Haute | Prioritaire car nouveau mode |
+| Tests checkout 301 | Ajouter des tests automatiques sur checkout, bust, double out et surlignage de cible. | A faire | Haute | Evite les regressions gameplay 301 |
+| Tests Playwright automatises | Transformer les smoke tests navigateur en scripts reproductibles dans `tests/`. | A faire | Moyenne | Utile si les evolutions UI continuent |
+| Sauvegarde/export donnees | Export/import JSON des joueurs, historiques et parties sauvegardees. | Moyen terme | Moyenne | Pratique avant refonte profonde |
+| Profils joueurs persistants | Gestion de profils joueurs avec statistiques cumulees. | Moyen terme | Moyenne | A concevoir proprement |
+| Migration Vite/React moderne | Passage a une vraie toolchain moderne. | A eviter pour l'instant | Basse | Premature tant que l'app reste simple et sans build |
+| Backend / comptes utilisateurs | Synchronisation cloud, comptes, multi-appareils. | A eviter pour l'instant | Basse | Trop lourd pour le besoin actuel |
+
+### Gameplay Et Usage
+
+| Sujet | Description | Statut | Priorite | Version / remarque |
+|---|---|---:|---:|---|
+| Mode 301 | Mode prioritaire de l'application, avec score restant central et saisie par cible. | Fait | Haute | Mode principal cible par l'utilisateur |
+| Mode 501 | Meme base que 301, score de depart 501. | Fait | Moyenne | `game01.js` |
+| Mode Cricket | Fermeture des secteurs 15-20 et Bull, scoring Cricket, historique. | Fait | Moyenne | `game-cricket.js` |
+| Mode Autour du monde | Sequence montante/descendante, options segments, bull optionnelle/interieure/toute bulle. | Fait | Haute | `game-around.js` |
+| Configuration joueurs | Ajout, suppression, renommage et reorganisation des equipes/joueurs. | Fait | Haute | Setup commun aux jeux |
+| Regles 301/501 | Simple out et double out disponibles. | Fait | Haute | Setup 01 |
+| Score restant en 301 | Mise en avant du joueur actif et du score restant. | Fait | Haute | Amelioration gameplay mobile |
+| Scores adversaires en portrait | Bandeau compact pour voir les autres joueurs sans surcharger l'ecran iPhone portrait. | Fait | Haute | Demande utilisateur |
+| Checkout conseille | Suggestion de checkout quand le score le permet. | Fait | Haute | Mode 301/501 |
+| Surlignage cible checkout | Surlignage de la zone conseillee sur la cible, par exemple `D20`. | Fait | Haute | Mode 301/501 |
+| Cible agrandie | Loupe `+` pour ouvrir la cible en plein ecran, loupe `-` pour revenir. | Fait | Haute | `V20260618 12H35` |
+| Saisie sans loupe | La cible normale reste utilisable comme avant. | Fait | Haute | Aucun changement de regle |
+| Tableau de bord paysage | Layout paysage/PC avec infos a gauche et cible grande a droite. | Fait | Haute | iPhone/iPad paysage + PC |
+| Historique court en partie | Resume des derniers tours disponible dans les layouts larges. | Fait | Moyenne | Utile en dashboard |
+| Ecran d'accueil | Liste des jeux 301, 501, Cricket, Autour du monde. | Fait | Haute | Bouton clair/sombre retire |
+| Reglages | Acces version, themes, effacement historique, effacement sauvegarde. | Fait | Moyenne | Themes centralises ici |
+| Themes d'humeur | 10 themes visuels selectionnables selon l'envie. | Fait | Moyenne | Lisibilite renforcee ensuite |
+| Lisibilite terrain | Bordures et libelles renforces pour usage mobile et conditions reelles. | Fait | Haute | `V20260618 13H05` |
+| Mode entrainement checkout | Exercice dedie aux fins de 301 avec propositions et stats de reussite. | A faire | Moyenne | Bonne evolution apres stabilisation 301 |
+| Statistiques en partie | Moyenne par volee, meilleur tour, darts jouees, checkout rate. | A faire | Moyenne | Idee deja identifiee |
+| Statistiques par joueur | Historique cumule par joueur/profil. | Moyen terme | Moyenne | Depend des profils persistants |
+| Fin de partie Autour du monde egalite | Gerer une variante avancee de departage a la bulle si besoin. | Moyen terme | Basse | Regle mentionnee, a preciser avant implementation |
+| Aide contextuelle | Micro-aide ou rappel discret des regles par mode. | Moyen terme | Basse | Attention a ne pas surcharger l'ecran |
+| Sons / vibrations | Feedback sonore ou haptique sur saisie, bust, victoire. | Moyen terme | Basse | Optionnel, a rendre desactivable |
+| Animation lourde / effets decoratifs | Effets visuels non essentiels. | A eviter pour l'instant | Basse | Priorite a la lisibilite et a la stabilite |
 
