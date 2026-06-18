@@ -2,7 +2,7 @@
 
 Application web/PWA de comptage de points pour flechettes.
 
-Version actuelle : `V20260618 12H35`
+Version actuelle : `V20260618 13H05`
 
 Cette application permet de jouer principalement aux modes :
 
@@ -46,6 +46,7 @@ Les objectifs prioritaires qui ont ete traites :
 - rendre React local au projet
 - ameliorer le mode `301`
 - ajouter une selection de 10 themes dans les reglages
+- renforcer la lisibilite des themes : bordures, textes secondaires et surfaces
 - ajouter une cible agrandie plein ecran pour faciliter la saisie sur mobile
 - verifier les 5 layouts principaux : PC, iPhone portrait, iPhone paysage, iPad portrait, iPad paysage
 
@@ -123,7 +124,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 12H35";
+var APP_VERSION = "V20260618 13H05";
 ```
 
 Ecrans geres :
@@ -149,6 +150,8 @@ Themes :
 - la page d'accueil ne propose plus de bouton clair/sombre
 - le choix de theme se fait dans `SettingsScreen`
 - les themes actuels sont : Classique nuit, Classique clair, Graphite, Ocean, Foret, Cerise, Royal, Solaire, Neon, Vintage
+- les palettes doivent garder un contraste suffisant entre `bg`, `surface`, `card`, `inputBg`, `border`, `text` et `muted`
+- `muted` reste utilise pour les textes secondaires, mais il doit rester lisible sur mobile
 
 ### `game01.js`
 
@@ -369,7 +372,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 12H35";
+var APP_VERSION = "V20260618 13H05";
 ```
 
 Important :
@@ -910,7 +913,7 @@ Quand une modification fonctionnelle est livree, mettre a jour :
 Exemple :
 
 ```js
-var APP_VERSION = "V20260618 12H35";
+var APP_VERSION = "V20260618 13H05";
 ```
 
 Si la version du service worker ne change pas, GitHub Pages ou le navigateur peuvent continuer a servir une ancienne version depuis le cache.
