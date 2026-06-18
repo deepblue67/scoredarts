@@ -75,7 +75,7 @@ function Game301(props) {
   var boardDisabled = throws.length >= MAX_THROWS || bust;
   var canUndo = throws.length > 0 && !bust;
   var turnComplete = throws.length >= MAX_THROWS && !bust;
-  var checkoutHint = projected > 0 && projected <= 170 && projected in CHECKOUT && throws.length === 0 ? CHECKOUT[projected] : null;
+  var checkoutHint = projected > 0 && projected <= 170 && projected in CHECKOUT ? CHECKOUT[projected] : null;
   useEffect(function () {
     if (!winner) {
       ls_set(SAVE_KEY, {
@@ -97,6 +97,36 @@ function Game301(props) {
     if (effectiveRule === "simple") return true;
     var last = th[th.length - 1];
     return last && (last.isDouble || last.value === 50 && last.multiplier === 1);
+  }
+  function checkoutTargets(plan) {
+    if (!plan) return null;
+    return plan.split(/\s+/).map(function (part) {
+      var token = String(part || "").toLowerCase();
+      if (token === "bull") return "bull";
+      if (/^[std]\d+$/.test(token)) return token;
+      return null;
+    }).filter(Boolean);
+  }
+  function checkoutLabel(target) {
+    if (!target) return "";
+    if (target === "bull") return "Bull";
+    return target.charAt(0).toUpperCase() + target.slice(1);
+  }
+  function checkoutState() {
+    var plan = checkoutHint;
+    var targets = checkoutTargets(plan);
+    var next = targets && targets.length ? checkoutLabel(targets[0]) : null;
+    var finishNow = projected === 0;
+    var danger = projected > 0 && projected <= 40;
+    var impossibleDouble = effectiveRule === "doubleout" && projected === 1;
+    return {
+      plan: plan,
+      targets: targets,
+      next: next,
+      finishNow: finishNow,
+      danger: danger,
+      impossibleDouble: impossibleDouble
+    };
   }
   function saveToHistory(w, nextTeams, nextStats) {
     var teamsForHistory = nextTeams || teams;
@@ -245,17 +275,21 @@ function Game301(props) {
     },
     onSameTeams: resetGame
   });
+  var aim = checkoutState();
+  var recentTurns = history.slice(-3).reverse();
   var leftContent = React.createElement(React.Fragment, null, React.createElement(DartsUI.ScorePanel, {
     teams: teams,
     currentIdx: currentIdx,
     C: C,
     teamColors: TEAM_COLORS
   }), React.createElement("div", {
+    className: "active-turn-card",
     style: {
       background: C.surface,
       borderRadius: 13,
-      padding: "12px 14px",
-      border: "1px solid " + C.border
+      padding: "14px 16px",
+      border: "1px solid " + (aim.plan ? C.accent : aim.danger ? C.red : C.border),
+      boxShadow: aim.plan ? "0 0 0 1px " + C.accent + "22, 0 10px 26px #0003" : "none"
     }
   }, React.createElement("div", {
     style: {
@@ -269,7 +303,7 @@ function Game301(props) {
       color: TEAM_COLORS[currentIdx],
       fontSize: 13,
       fontWeight: "bold",
-      letterSpacing: 1,
+      letterSpacing: 0,
       textTransform: "uppercase"
     }
   }, team.name), React.createElement("div", {
@@ -289,10 +323,18 @@ function Game301(props) {
     }
   }, React.createElement("div", {
     style: {
+      color: C.muted,
+      fontSize: 10,
+      letterSpacing: 1,
+      textTransform: "uppercase"
+    }
+  }, projected < 0 ? "Depasse" : projected === 0 ? "Fin" : "Reste"), React.createElement("div", {
+    style: {
       color: projected < 0 ? C.red : projected === 0 ? C.green : C.text,
-      fontSize: 26,
+      fontSize: 48,
       fontWeight: "bold",
       fontFamily: "monospace",
+      lineHeight: 1,
       transition: "color 0.2s"
     }
   }, projected < 0 ? "BUST!" : projected), roundTotal > 0 && projected >= 0 && React.createElement("div", {
@@ -304,36 +346,55 @@ function Game301(props) {
     throws: throws,
     max: MAX_THROWS,
     C: C
-  }), checkoutHint && React.createElement("div", {
+  }), aim.next && React.createElement("div", {
     style: {
       marginTop: 10,
       background: C.card,
-      borderRadius: 8,
-      padding: "8px 12px",
-      display: "flex",
+      borderRadius: 10,
+      padding: "10px 12px",
+      display: "grid",
+      gridTemplateColumns: "auto 1fr",
       alignItems: "center",
-      gap: 8,
-      border: "1px solid " + C.accent + "44"
+      gap: 10,
+      border: "1px solid " + C.accent + "66"
     }
   }, React.createElement("span", {
     style: {
-      fontSize: 14
+      minWidth: 46,
+      height: 46,
+      borderRadius: 10,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: C.accent,
+      color: "#111",
+      fontSize: 17,
+      fontWeight: "bold",
+      fontFamily: "monospace"
     }
-  }, "Tip"), React.createElement("div", null, React.createElement("div", {
+  }, aim.next), React.createElement("div", null, React.createElement("div", {
     style: {
       color: C.accent,
       fontSize: 10,
       letterSpacing: 1,
       textTransform: "uppercase"
     }
-  }, "Checkout suggere"), React.createElement("div", {
+  }, "Checkout conseille"), React.createElement("div", {
     style: {
       color: C.text,
-      fontSize: 13,
+      fontSize: 15,
       fontWeight: "bold",
       fontFamily: "monospace"
     }
-  }, checkoutHint))), effectiveRule === "doubleout" && projected > 0 && projected <= 40 && projected % 2 === 0 && throws.length === MAX_THROWS - 1 && React.createElement("div", {
+  }, aim.plan))), aim.impossibleDouble && React.createElement("div", {
+    style: {
+      marginTop: 8,
+      color: C.red,
+      fontSize: 12,
+      fontWeight: "bold",
+      textAlign: "center"
+    }
+  }, "Double out impossible a 1 : evitez ce reste"), effectiveRule === "doubleout" && projected > 0 && projected <= 40 && projected % 2 === 0 && throws.length === MAX_THROWS - 1 && React.createElement("div", {
     style: {
       marginTop: 8,
       color: C.accent,
@@ -342,6 +403,7 @@ function Game301(props) {
       fontStyle: "italic"
     }
   }, "Double out requis - visez D" + projected / 2)), !boardDisabled && React.createElement("button", {
+    className: "miss-button",
     onClick: function () {
       handleScore({
         value: 0,
@@ -364,7 +426,48 @@ function Game301(props) {
       letterSpacing: 2,
       fontFamily: "Georgia,serif"
     }
-  }, "Rate - 0 point"), React.createElement(DartsUI.ActionButtons, {
+  }, "Rate - 0 point"), recentTurns.length > 0 && React.createElement("div", {
+    className: "turn-history-summary",
+    style: {
+      background: C.surface,
+      border: "1px solid " + C.border,
+      borderRadius: 12,
+      padding: "10px 12px"
+    }
+  }, React.createElement("div", {
+    style: {
+      color: C.muted,
+      fontSize: 10,
+      letterSpacing: 1,
+      textTransform: "uppercase",
+      marginBottom: 6
+    }
+  }, "Derniers tours"), recentTurns.map(function (turn, index) {
+    return React.createElement("div", {
+      key: index,
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        gap: 10,
+        color: turn.bust ? C.red : C.text,
+        fontSize: 12,
+        padding: "3px 0",
+        borderTop: index === 0 ? "0" : "1px solid " + C.border + "66"
+      }
+    }, React.createElement("span", {
+      style: {
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap"
+      }
+    }, turn.teamName), React.createElement("strong", {
+      style: {
+        fontFamily: "monospace"
+      }
+    }, turn.bust ? "BUST" : turn.total));
+  })), React.createElement("div", {
+    className: "turn-actions"
+  }, React.createElement(DartsUI.ActionButtons, {
     canUndo: canUndo,
     onUndo: undoLast,
     canPass: throws.length === 0 && !bust,
@@ -374,7 +477,7 @@ function Game301(props) {
       if (turnComplete) setShowConf(true);
     },
     C: C
-  }));
+  })));
   return React.createElement("div", {
     style: {
       minHeight: "100vh",
@@ -436,7 +539,8 @@ function Game301(props) {
       onScore: handleScore,
       disabled: boardDisabled,
       C: C,
-      segments: SEGMENTS
+      segments: SEGMENTS,
+      highlightTargets: aim.targets
     })
   }), React.createElement(DartsUI.BustOverlay, {
     show: bust,

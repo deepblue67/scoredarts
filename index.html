@@ -33,16 +33,96 @@
     .spin-win{animation:spinWin 1s  ease both}
     .slide-up{animation:slideUp .35s ease both}
 
-    /* ── iPhone portrait : défaut ── */
+    /* Base / fallback */
     .dartboard-svg { max-width:370px }
+    .turn-history-summary{display:none}
+    .turn-actions{width:100%}
 
-    /* ── iPad portrait ── */
+    /* PC */
+    @media (min-width:1367px){
+      .game-layout{
+        flex-direction:row !important;
+        align-items:stretch !important;
+        overflow:hidden !important;
+        padding:0 !important;
+        gap:0 !important;
+      }
+      .game-left{
+        flex:0 0 420px !important;
+        overflow-y:auto !important;
+        padding:16px 18px !important;
+        border-right:1px solid #2a2f4a;
+        gap:12px;
+      }
+      .turn-history-summary{display:block}
+      .turn-actions{margin-top:auto}
+      .game-right{
+        flex:1 !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:18px !important;
+      }
+      .dartboard-svg{
+        max-width:min(760px, calc(100vw - 480px), calc(100vh - 70px)) !important;
+        width:100% !important;
+      }
+    }
+
+    /* iPhone portrait */
+    @media (max-width:767px) and (orientation:portrait){
+      .dartboard-svg{max-width:min(370px, calc(100vw - 24px))}
+      .score-panel{display:none !important}
+      .active-turn-card{margin-top:0}
+    }
+
+    /* iPhone paysage */
+    @media (max-height:430px) and (orientation:landscape){
+      .game-layout{
+        flex-direction:row !important;
+        align-items:stretch !important;
+        overflow:hidden !important;
+        padding:0 !important;
+        gap:0 !important;
+      }
+      .game-left{
+        flex:0 0 260px !important;
+        overflow-y:auto !important;
+        padding:6px 8px !important;
+        border-right:1px solid #2a2f4a;
+        gap:4px !important;
+      }
+      .turn-history-summary{display:block}
+      .turn-actions{margin-top:auto}
+      .score-panel{max-height:54px;overflow:hidden}
+      .score-panel > div{padding:5px 4px !important;border-width:1px !important}
+      .score-panel div{font-size:9px !important}
+      .active-turn-card{padding:8px 10px !important}
+      .miss-button{padding:7px 0 !important;font-size:12px !important}
+      .turn-history-summary{padding:6px 8px !important;max-height:48px;overflow:hidden}
+      .turn-history-summary div{font-size:10px !important}
+      .action-buttons{gap:6px !important}
+      .action-buttons button{padding:8px 0 !important;font-size:11px !important;border-radius:9px !important}
+      .game-right{
+        flex:1 !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:6px !important;
+      }
+      .dartboard-svg{
+        max-width:min(calc(100vw - 280px), calc(100vh - 20px)) !important;
+        width:100% !important;
+      }
+    }
+
+    /* iPad portrait */
     @media (min-width:768px) and (max-width:1024px) and (orientation:portrait){
       .dartboard-svg{max-width:580px}
     }
 
-    /* ── iPad paysage : cible occupe toute la droite ── */
-    @media (min-width:1024px) and (orientation:landscape){
+    /* iPad paysage */
+    @media (min-width:768px) and (max-width:1366px) and (min-height:431px) and (orientation:landscape){
       .game-layout{
         flex-direction:row !important;
         align-items:stretch !important;
@@ -57,6 +137,8 @@
         border-right:1px solid #2a2f4a;
         gap:10px;
       }
+      .turn-history-summary{display:block}
+      .turn-actions{margin-top:auto}
       .game-right{
         flex:1 !important;
         display:flex !important;
@@ -66,35 +148,6 @@
       }
       .dartboard-svg{
         max-width:min(calc(100vw - 400px), calc(100vh - 80px)) !important;
-        width:100% !important;
-      }
-    }
-
-    /* ── iPhone paysage ── */
-    @media (max-height:430px) and (orientation:landscape){
-      .game-layout{
-        flex-direction:row !important;
-        align-items:stretch !important;
-        overflow:hidden !important;
-        padding:0 !important;
-        gap:0 !important;
-      }
-      .game-left{
-        flex:0 0 260px !important;
-        overflow-y:auto !important;
-        padding:8px 10px !important;
-        border-right:1px solid #2a2f4a;
-        gap:6px;
-      }
-      .game-right{
-        flex:1 !important;
-        display:flex !important;
-        align-items:center !important;
-        justify-content:center !important;
-        padding:6px !important;
-      }
-      .dartboard-svg{
-        max-width:min(calc(100vw - 280px), calc(100vh - 20px)) !important;
         width:100% !important;
       }
     }

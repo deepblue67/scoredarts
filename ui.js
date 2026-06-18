@@ -6,6 +6,7 @@
   function DartBoard(props) {
     var onScore = props.onScore, disabled = props.disabled, C = props.C;
     var highlightSectors = props.highlightSectors || null;
+    var highlightTargets = props.highlightTargets || null;
     var segments = props.segments || [];
     var cx = 200, cy = 200;
     var R = { bullseye: 12, bull: 28, innerSingle: 96, triple: 108, outerSingle: 160, double: 172, board: 190 };
@@ -30,6 +31,28 @@
     function opacityFor(num) {
       if (!highlightSectors) return 1;
       return highlightSectors.indexOf(num) >= 0 ? 1 : 0.25;
+    }
+    function targetKey(value, multiplier) {
+      if (value === 50) return "bull";
+      if (value === 25) return "outer-bull";
+      return (multiplier === 3 ? "t" : multiplier === 2 ? "d" : "s") + value;
+    }
+    function targetIsHighlighted(value, multiplier) {
+      if (!highlightTargets) return false;
+      var key = targetKey(value, multiplier);
+      return highlightTargets.map(function(target) {
+        return String(target).toLowerCase();
+      }).indexOf(key) >= 0;
+    }
+    function opacityForZone(num, multiplier) {
+      if (highlightTargets) return targetIsHighlighted(num, multiplier) ? 1 : 0.18;
+      return opacityFor(num);
+    }
+    function strokeForZone(num, multiplier) {
+      return targetIsHighlighted(num, multiplier) ? C.accent : "#1a1a1a";
+    }
+    function strokeWidthForZone(num, multiplier) {
+      return targetIsHighlighted(num, multiplier) ? 2.4 : 0.6;
     }
     function hit(value, multiplier, zone) {
       if (disabled) return;
@@ -68,9 +91,9 @@
           key: zone.zone,
           d: arc(zone.r1, zone.r2, start, end),
           fill: flash === zone.zone ? C.accent : zone.color,
-          stroke: "#1a1a1a",
-          strokeWidth: 0.6,
-          opacity: zoneOpacity,
+          stroke: strokeForZone(num, zone.multiplier),
+          strokeWidth: strokeWidthForZone(num, zone.multiplier),
+          opacity: highlightTargets ? opacityForZone(num, zone.multiplier) : zoneOpacity,
           style: { cursor: disabled ? "default" : "pointer", transition: "fill 0.12s" },
           onClick: function() { hit(num, zone.multiplier, zone.zone); }
         }));
@@ -89,7 +112,7 @@
         fontWeight: "bold",
         fill: C.dartCream,
         fontFamily: "monospace",
-        opacity: opacityFor(num),
+        opacity: highlightTargets ? 0.75 : opacityFor(num),
         style: { pointerEvents: "none", userSelect: "none" }
       }, num));
     });
@@ -101,9 +124,9 @@
         cy: cy,
         r: R.bull,
         fill: flash === "bull25" ? C.accent : C.dartGreen,
-        stroke: "#333",
-        strokeWidth: 1,
-        opacity: opacityFor(25),
+        stroke: targetIsHighlighted(25, 1) ? C.accent : "#333",
+        strokeWidth: targetIsHighlighted(25, 1) ? 2.4 : 1,
+        opacity: highlightTargets ? opacityForZone(25, 1) : opacityFor(25),
         style: { cursor: disabled ? "default" : "pointer", transition: "fill 0.12s" },
         onClick: function() { hit(25, 1, "bull25"); }
       }),
@@ -113,9 +136,9 @@
         cy: cy,
         r: R.bullseye,
         fill: flash === "bull50" ? C.accent : C.dartRed,
-        stroke: "#222",
-        strokeWidth: 1,
-        opacity: opacityFor(25),
+        stroke: targetIsHighlighted(50, 1) ? C.accent : "#222",
+        strokeWidth: targetIsHighlighted(50, 1) ? 2.4 : 1,
+        opacity: highlightTargets ? opacityForZone(50, 1) : opacityFor(25),
         style: { cursor: disabled ? "default" : "pointer", transition: "fill 0.12s" },
         onClick: function() { hit(50, 1, "bull50"); }
       }),
@@ -160,7 +183,7 @@
 
   function ThrowDots(props) {
     var throws = props.throws, max = props.max, C = props.C;
-    return h("div", { style: { display: "flex", gap: 8 } },
+    return h("div", { className: "action-buttons", style: { display: "flex", gap: 8 } },
       Array.from({ length: max }).map(function(_, index) {
         var dart = throws[index];
         return h("div", {
@@ -1379,6 +1402,7 @@
     var pad = many ? "7px 5px" : "10px 8px";
 
     return h("div", {
+      className: "score-panel",
       style: {
         display: "flex",
         gap: many ? 5 : 8,
