@@ -95,6 +95,21 @@
     if (name === "plus") {
       return h("svg", common, h("path", { d: "M12 5v14" }), h("path", { d: "M5 12h14" }));
     }
+    if (name === "zoom-in") {
+      return h("svg", common,
+        h("circle", { cx: 10.5, cy: 10.5, r: 6.5 }),
+        h("path", { d: "M16 16l5 5" }),
+        h("path", { d: "M10.5 7.8v5.4" }),
+        h("path", { d: "M7.8 10.5h5.4" })
+      );
+    }
+    if (name === "zoom-out") {
+      return h("svg", common,
+        h("circle", { cx: 10.5, cy: 10.5, r: 6.5 }),
+        h("path", { d: "M16 16l5 5" }),
+        h("path", { d: "M7.8 10.5h5.4" })
+      );
+    }
     if (name === "trash") {
       return h("svg", common, h("path", { d: "M4 7h16" }), h("path", { d: "M10 11v6" }), h("path", { d: "M14 11v6" }), h("path", { d: "M6 7l1 14h10l1-14" }), h("path", { d: "M9 7V4h6v3" }));
     }
@@ -678,6 +693,19 @@
   function GameLayout(props) {
     var leftContent = props.leftContent;
     var boardContent = props.boardContent;
+    var C = props.C;
+    var s1 = React.useState(false);
+    var boardZoomed = s1[0], setBoardZoomed = s1[1];
+
+    React.useEffect(function() {
+      if (!boardZoomed) return;
+      var oldOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return function() {
+        document.body.style.overflow = oldOverflow;
+      };
+    }, [boardZoomed]);
+
     return h("div", {
       className: "game-layout",
       style: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }
@@ -688,8 +716,96 @@
       }, leftContent),
       h("div", {
         className: "game-right",
-        style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "8px" }
-      }, boardContent)
+        style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "8px", position: "relative" }
+      },
+        h("button", {
+          type: "button",
+          onClick: function() { setBoardZoomed(true); },
+          title: "Agrandir la cible",
+          "aria-label": "Agrandir la cible",
+          style: {
+            position: "absolute",
+            top: 10,
+            right: 10,
+            zIndex: 2,
+            width: 42,
+            height: 42,
+            borderRadius: 999,
+            border: "1px solid " + C.border,
+            background: C.card,
+            color: C.text,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: "0 8px 22px #0008"
+          }
+        }, h(Icon, { name: "zoom-in", C: C, size: 20, color: C.text })),
+        boardContent
+      ),
+      boardZoomed ? h("div", {
+        className: "dartboard-fullscreen",
+        style: {
+          position: "fixed",
+          inset: 0,
+          zIndex: 650,
+          background: C.bg,
+          display: "flex",
+          flexDirection: "column",
+          padding: "max(10px,env(safe-area-inset-top,10px)) 2px max(10px,env(safe-area-inset-bottom,10px))",
+          fontFamily: "Georgia,serif"
+        }
+      },
+        h("div", {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            marginBottom: 8,
+            flex: "0 0 auto"
+          }
+        },
+          h("div", {
+            style: {
+              color: C.accent,
+              fontSize: 13,
+              fontWeight: "bold",
+              letterSpacing: 2,
+              textTransform: "uppercase"
+            }
+          }, "Cible agrandie"),
+          h("button", {
+            type: "button",
+            onClick: function() { setBoardZoomed(false); },
+            title: "Reduire la cible",
+            "aria-label": "Reduire la cible",
+            style: {
+              width: 44,
+              height: 44,
+              borderRadius: 999,
+              border: "1px solid " + C.border,
+              background: C.card,
+              color: C.text,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer"
+            }
+          }, h(Icon, { name: "zoom-out", C: C, size: 21, color: C.text }))
+        ),
+        h("div", {
+          className: "dartboard-fullscreen-board",
+          style: {
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%"
+          }
+        }, boardContent)
+      ) : null
     );
   }
 

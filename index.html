@@ -39,6 +39,10 @@
     .turn-history-summary{display:none}
     .turn-actions{width:100%}
     .opponent-score-strip{display:none}
+    .dartboard-fullscreen-board .dartboard-svg{
+      max-width:min(calc(100vw - 4px), calc(100vh - 76px)) !important;
+      width:100% !important;
+    }
 
     /* PC */
     @media (min-width:1367px){
@@ -152,6 +156,12 @@
       .dartboard-svg{
         max-width:min(calc(100vw - 400px), calc(100vh - 80px)) !important;
         width:100% !important;
+      }
+    }
+
+    @media (orientation:landscape){
+      .dartboard-fullscreen-board .dartboard-svg{
+        max-width:min(calc(100vw - 16px), calc(100vh - 64px)) !important;
       }
     }
 

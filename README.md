@@ -2,7 +2,7 @@
 
 Application web/PWA de comptage de points pour flechettes.
 
-Version actuelle : `V20260618 12H05`
+Version actuelle : `V20260618 12H35`
 
 Cette application permet de jouer principalement aux modes :
 
@@ -46,6 +46,7 @@ Les objectifs prioritaires qui ont ete traites :
 - rendre React local au projet
 - ameliorer le mode `301`
 - ajouter une selection de 10 themes dans les reglages
+- ajouter une cible agrandie plein ecran pour faciliter la saisie sur mobile
 - verifier les 5 layouts principaux : PC, iPhone portrait, iPhone paysage, iPad portrait, iPad paysage
 
 ## Structure Du Projet
@@ -122,7 +123,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 12H05";
+var APP_VERSION = "V20260618 12H35";
 ```
 
 Ecrans geres :
@@ -269,6 +270,13 @@ Exemples de `highlightTargets` :
 ["bull"]
 ```
 
+`GameLayout` ajoute aussi une action de confort autour de `DartBoard` :
+
+- une icone loupe `+` permet d'ouvrir la cible en plein ecran
+- une icone loupe `-` permet de revenir a l'affichage normal
+- la saisie reste strictement identique : meme `DartBoard`, memes callbacks, memes regles de score
+- cette option est disponible dans les modes `301`, `501`, `Cricket` et `Autour du monde`
+
 ### `scoring.js`
 
 Role :
@@ -361,7 +369,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 12H05";
+var APP_VERSION = "V20260618 12H35";
 ```
 
 Important :
@@ -587,6 +595,8 @@ Priorites visuelles :
 6. actions rapides
 
 En portrait iPhone, le bandeau general des scores est masque pour simplifier l'ecran.
+
+La cible peut etre agrandie en plein ecran avec la loupe `+`. C'est uniquement une aide de saisie : les zones cliquees, les surlignages de checkout et les regles de score restent les memes. La loupe `-` ferme la cible agrandie.
 
 En paysage/PC, l'interface devient un tableau de bord :
 
@@ -900,7 +910,7 @@ Quand une modification fonctionnelle est livree, mettre a jour :
 Exemple :
 
 ```js
-var APP_VERSION = "V20260618 12H05";
+var APP_VERSION = "V20260618 12H35";
 ```
 
 Si la version du service worker ne change pas, GitHub Pages ou le navigateur peuvent continuer a servir une ancienne version depuis le cache.
