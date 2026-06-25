@@ -174,11 +174,13 @@
     var pointerRef = React.useRef(null);
     var longPressActiveRef = React.useRef(false);
     var suppressClickRef = React.useRef(false);
+    var suppressClickTimerRef = React.useRef(null);
     var lensIdRef = React.useRef("dart-lens-" + (++dartBoardInstanceId));
 
     React.useEffect(function() {
       return function() {
         if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+        if (suppressClickTimerRef.current) clearTimeout(suppressClickTimerRef.current);
       };
     }, []);
 
@@ -245,7 +247,14 @@
       };
     }
     function handleQuickHit(value, multiplier, zone) {
-      if (suppressClickRef.current) return;
+      if (suppressClickRef.current) {
+        suppressClickRef.current = false;
+        if (suppressClickTimerRef.current) {
+          clearTimeout(suppressClickTimerRef.current);
+          suppressClickTimerRef.current = null;
+        }
+        return;
+      }
       hit(value, multiplier, zone);
     }
     function clearLongPress() {
@@ -257,18 +266,28 @@
     function handlePointerDown(event) {
       if (disabled || (event.pointerType === "mouse" && event.button !== 0)) return;
       clearLongPress();
-      longPressActiveRef.current = false;
+      if (suppressClickTimerRef.current) {
+        clearTimeout(suppressClickTimerRef.current);
+        suppressClickTimerRef.current = null;
+      }
       suppressClickRef.current = false;
+      longPressActiveRef.current = false;
       pointerRef.current = {
         pointerId: event.pointerId,
-        point: pointFromEvent(event, event.currentTarget)
+        point: pointFromEvent(event, event.currentTarget),
+        lensSide: null
       };
       longPressTimerRef.current = setTimeout(function() {
         longPressTimerRef.current = null;
         if (!pointerRef.current) return;
         longPressActiveRef.current = true;
         suppressClickRef.current = true;
-        setMagnifier(pointerRef.current.point);
+        pointerRef.current.lensSide = pointerRef.current.point.y < 145 ? "below" : "above";
+        setMagnifier({
+          x: pointerRef.current.point.x,
+          y: pointerRef.current.point.y,
+          side: pointerRef.current.lensSide
+        });
         if (svgRef.current && svgRef.current.setPointerCapture) {
           try { svgRef.current.setPointerCapture(pointerRef.current.pointerId); } catch (error) {}
         }
@@ -280,7 +299,11 @@
       pointerRef.current.point = point;
       if (longPressActiveRef.current) {
         event.preventDefault();
-        setMagnifier(point);
+        setMagnifier({
+          x: point.x,
+          y: point.y,
+          side: pointerRef.current.lensSide
+        });
       }
     }
     function finishPointer(event, shouldScore) {
@@ -293,7 +316,11 @@
         if (shouldScore && target) hit(target.value, target.multiplier, target.zone);
         setMagnifier(null);
         longPressActiveRef.current = false;
-        setTimeout(function() { suppressClickRef.current = false; }, 0);
+        if (suppressClickTimerRef.current) clearTimeout(suppressClickTimerRef.current);
+        suppressClickTimerRef.current = setTimeout(function() {
+          suppressClickRef.current = false;
+          suppressClickTimerRef.current = null;
+        }, 700);
       }
       pointerRef.current = null;
     }
@@ -405,8 +432,8 @@
     if (magnifier) {
       var lensRadius = 58;
       var lensX = Math.max(lensRadius + 5, Math.min(400 - lensRadius - 5, magnifier.x));
-      var preferredLensY = magnifier.y - 88;
-      var lensY = preferredLensY < lensRadius + 5 ? magnifier.y + 88 : preferredLensY;
+      var lensOffset = magnifier.side === "below" ? 88 : -88;
+      var lensY = magnifier.y + lensOffset;
       lensY = Math.max(lensRadius + 5, Math.min(400 - lensRadius - 5, lensY));
       var magnifierSource = children.slice();
       children.push(

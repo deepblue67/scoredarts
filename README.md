@@ -2,7 +2,7 @@
 
 Application web/PWA de comptage de points pour flechettes.
 
-Version actuelle : `V20260625 16H42`
+Version actuelle : `V20260625 17H05`
 
 Cette application permet de jouer principalement aux modes :
 
@@ -134,7 +134,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260625 16H42";
+var APP_VERSION = "V20260625 17H05";
 ```
 
 Ecrans geres :
@@ -291,6 +291,10 @@ La saisie tactile propose deux gestes complementaires :
 - relachement : la zone placee sous le reticule est enregistree
 - annulation du geste : aucune flechette n'est ajoutee
 
+Le cote d'affichage de la loupe est choisi au debut de l'appui long et reste
+fixe pendant tout le geste. Le clic tactile synthetique emis apres le
+relachement est consomme sans ajouter une seconde flechette.
+
 Le calcul de la zone visee est realise par `getDartTargetAtPoint`. Il utilise les
 coordonnees de la cible, la distance au centre et l'angle du pointeur. La saisie
 reste donc fiable meme lorsque la loupe recouvre visuellement une partie de la
@@ -396,7 +400,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260625 16H42";
+var APP_VERSION = "V20260625 17H05";
 ```
 
 Important :
@@ -944,7 +948,7 @@ Quand une modification fonctionnelle est livree, mettre a jour :
 Exemple :
 
 ```js
-var APP_VERSION = "V20260625 16H42";
+var APP_VERSION = "V20260625 17H05";
 ```
 
 Si la version du service worker ne change pas, GitHub Pages ou le navigateur peuvent continuer a servir une ancienne version depuis le cache.
@@ -1075,6 +1079,8 @@ Actions :
 - conservation du toucher rapide existant
 - fonctionnement partage par les quatre modes et la cible plein ecran
 - prevention du menu contextuel iOS pendant la visee
+- stabilisation de la loupe sur un seul cote pendant le geste
+- neutralisation de la double saisie generee par le clic tactile post-relachement
 
 ## Idees Possibles Pour La Suite
 
@@ -1170,7 +1176,7 @@ Statuts utilises :
 | Scoring pur | Creation de `DartsScoring` pour isoler les calculs 01 et Cricket de l'UI. | Fait | Haute | `scoring.js` |
 | Service Worker | Cache PWA versionne, precache des fichiers, activation de mise a jour via `SKIP_WAITING`. | Fait | Haute | `sw.js` |
 | Manifest PWA | Ajout de `manifest.json`, icones et compatibilite installation mobile. | Fait | Haute | `assets/` + `manifest.json` |
-| Gestion versions | Synchronisation de `APP_VERSION` dans `app.js`, `sw.js` et README. | Fait | Haute | Derniere version : `V20260625 16H42` |
+| Gestion versions | Synchronisation de `APP_VERSION` dans `app.js`, `sw.js` et README. | Fait | Haute | Derniere version : `V20260625 17H05` |
 | Tests scoring | Regression scoring pour 01 et Cricket. | Fait | Haute | 8 assertions |
 | Tests stockage | Regression stockage pour sauvegardes anciennes, wrapping, schema et suppression. | Fait | Haute | 7 assertions |
 | Tests UI | Regression des composants `DartsUI`, du calcul geometrique de la cible et des gestes de precision. | Fait | Haute | 39 checks |
@@ -1203,7 +1209,7 @@ Statuts utilises :
 | Checkout conseille | Suggestion de checkout quand le score le permet. | Fait | Haute | Mode 301/501 |
 | Surlignage cible checkout | Surlignage de la zone conseillee sur la cible, par exemple `D20`. | Fait | Haute | Mode 301/501 |
 | Cible agrandie | Loupe `+` pour ouvrir la cible en plein ecran, loupe `-` pour revenir. | Fait | Haute | `V20260618 12H35` |
-| Loupe de precision | Appui long sur la cible, suivi du doigt avec agrandissement et reticule, validation de la zone au relachement. | Fait | Haute | `V20260625 16H42` |
+| Loupe de precision | Appui long, suivi du doigt et validation au relachement. Position stabilisee et double saisie tactile neutralisee. | Fait | Haute | Correctif `V20260625 17H05` |
 | Saisie sans loupe | La cible normale reste utilisable comme avant. | Fait | Haute | Aucun changement de regle |
 | Tableau de bord paysage | Layout paysage/PC avec infos a gauche et cible grande a droite. | Fait | Haute | iPhone/iPad paysage + PC |
 | Historique court en partie | Resume des derniers tours disponible dans les layouts larges. | Fait | Moyenne | Utile en dashboard |
