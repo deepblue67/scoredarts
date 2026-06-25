@@ -138,6 +138,25 @@
     }, h(Icon, { name: props.name, C: C, size: props.iconSize || 23 }));
   }
 
+  var dartBoardInstanceId = 0;
+
+  function getDartTargetAtPoint(x, y, segments) {
+    var dx = x - 200;
+    var dy = y - 200;
+    var radius = Math.sqrt(dx * dx + dy * dy);
+    if (radius > 172) return null;
+    if (radius <= 12) return { value: 50, multiplier: 1, zone: "bull50" };
+    if (radius <= 28) return { value: 25, multiplier: 1, zone: "bull25" };
+
+    var angle = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
+    var index = Math.round(angle / 18) % 20;
+    var value = segments[index];
+    if (radius <= 96) return { value: value, multiplier: 1, zone: "s-" + value };
+    if (radius <= 108) return { value: value, multiplier: 3, zone: "t-" + value };
+    if (radius <= 160) return { value: value, multiplier: 1, zone: "o-" + value };
+    return { value: value, multiplier: 2, zone: "d-" + value };
+  }
+
   function DartBoard(props) {
     var onScore = props.onScore, disabled = props.disabled, C = props.C;
     var highlightSectors = props.highlightSectors || null;
@@ -148,6 +167,20 @@
     var SEG = 18;
     var flashState = React.useState(null);
     var flash = flashState[0], setFlash = flashState[1];
+    var magnifierState = React.useState(null);
+    var magnifier = magnifierState[0], setMagnifier = magnifierState[1];
+    var svgRef = React.useRef(null);
+    var longPressTimerRef = React.useRef(null);
+    var pointerRef = React.useRef(null);
+    var longPressActiveRef = React.useRef(false);
+    var suppressClickRef = React.useRef(false);
+    var lensIdRef = React.useRef("dart-lens-" + (++dartBoardInstanceId));
+
+    React.useEffect(function() {
+      return function() {
+        if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      };
+    }, []);
 
     function rad(degrees) { return degrees * Math.PI / 180; }
     function arc(r1, r2, start, end) {
@@ -204,6 +237,72 @@
         isBull: value === 50 || value === 25
       });
     }
+    function pointFromEvent(event, svg) {
+      var rect = svg.getBoundingClientRect();
+      return {
+        x: (event.clientX - rect.left) * 400 / rect.width,
+        y: (event.clientY - rect.top) * 400 / rect.height
+      };
+    }
+    function handleQuickHit(value, multiplier, zone) {
+      if (suppressClickRef.current) return;
+      hit(value, multiplier, zone);
+    }
+    function clearLongPress() {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    }
+    function handlePointerDown(event) {
+      if (disabled || (event.pointerType === "mouse" && event.button !== 0)) return;
+      clearLongPress();
+      longPressActiveRef.current = false;
+      suppressClickRef.current = false;
+      pointerRef.current = {
+        pointerId: event.pointerId,
+        point: pointFromEvent(event, event.currentTarget)
+      };
+      longPressTimerRef.current = setTimeout(function() {
+        longPressTimerRef.current = null;
+        if (!pointerRef.current) return;
+        longPressActiveRef.current = true;
+        suppressClickRef.current = true;
+        setMagnifier(pointerRef.current.point);
+        if (svgRef.current && svgRef.current.setPointerCapture) {
+          try { svgRef.current.setPointerCapture(pointerRef.current.pointerId); } catch (error) {}
+        }
+      }, 320);
+    }
+    function handlePointerMove(event) {
+      if (!pointerRef.current || pointerRef.current.pointerId !== event.pointerId) return;
+      var point = pointFromEvent(event, event.currentTarget);
+      pointerRef.current.point = point;
+      if (longPressActiveRef.current) {
+        event.preventDefault();
+        setMagnifier(point);
+      }
+    }
+    function finishPointer(event, shouldScore) {
+      if (!pointerRef.current || pointerRef.current.pointerId !== event.pointerId) return;
+      clearLongPress();
+      if (longPressActiveRef.current) {
+        event.preventDefault();
+        var point = pointFromEvent(event, event.currentTarget);
+        var target = getDartTargetAtPoint(point.x, point.y, segments);
+        if (shouldScore && target) hit(target.value, target.multiplier, target.zone);
+        setMagnifier(null);
+        longPressActiveRef.current = false;
+        setTimeout(function() { suppressClickRef.current = false; }, 0);
+      }
+      pointerRef.current = null;
+    }
+    function handlePointerUp(event) {
+      finishPointer(event, true);
+    }
+    function handlePointerCancel(event) {
+      finishPointer(event, false);
+    }
 
     var children = [
       h("circle", { key: "board-shadow", cx: cx, cy: cy, r: R.board + 8, fill: "#1a1108" }),
@@ -230,7 +329,7 @@
           strokeWidth: strokeWidthForZone(num, zone.multiplier),
           opacity: highlightTargets ? opacityForZone(num, zone.multiplier) : zoneOpacity,
           style: { cursor: disabled ? "default" : "pointer", transition: "fill 0.12s" },
-          onClick: function() { hit(num, zone.multiplier, zone.zone); }
+          onClick: function() { handleQuickHit(num, zone.multiplier, zone.zone); }
         }));
       });
     });
@@ -263,7 +362,7 @@
         strokeWidth: targetIsHighlighted(25, 1) ? 2.4 : 1,
         opacity: highlightTargets ? opacityForZone(25, 1) : opacityFor(25),
         style: { cursor: disabled ? "default" : "pointer", transition: "fill 0.12s" },
-        onClick: function() { hit(25, 1, "bull25"); }
+        onClick: function() { handleQuickHit(25, 1, "bull25"); }
       }),
       h("circle", {
         key: "bull50",
@@ -275,7 +374,7 @@
         strokeWidth: targetIsHighlighted(50, 1) ? 2.4 : 1,
         opacity: highlightTargets ? opacityForZone(50, 1) : opacityFor(25),
         style: { cursor: disabled ? "default" : "pointer", transition: "fill 0.12s" },
-        onClick: function() { hit(50, 1, "bull50"); }
+        onClick: function() { handleQuickHit(50, 1, "bull50"); }
       }),
       h("text", {
         key: "bull-label",
@@ -303,15 +402,89 @@
       }));
     }
 
+    if (magnifier) {
+      var lensRadius = 58;
+      var lensX = Math.max(lensRadius + 5, Math.min(400 - lensRadius - 5, magnifier.x));
+      var preferredLensY = magnifier.y - 88;
+      var lensY = preferredLensY < lensRadius + 5 ? magnifier.y + 88 : preferredLensY;
+      lensY = Math.max(lensRadius + 5, Math.min(400 - lensRadius - 5, lensY));
+      var magnifierSource = children.slice();
+      children.push(
+        h("defs", { key: "magnifier-defs" },
+          h("clipPath", { id: lensIdRef.current },
+            h("circle", { cx: lensX, cy: lensY, r: lensRadius })
+          )
+        ),
+        h("circle", {
+          key: "magnifier-shadow",
+          cx: lensX,
+          cy: lensY,
+          r: lensRadius + 5,
+          fill: "rgba(0,0,0,0.72)",
+          style: { pointerEvents: "none" }
+        }),
+        h("g", {
+          key: "magnifier-content",
+          clipPath: "url(#" + lensIdRef.current + ")",
+          style: { pointerEvents: "none" }
+        },
+          h("g", {
+            transform: "translate(" + lensX + " " + lensY + ") scale(2.35) translate(" +
+              (-magnifier.x) + " " + (-magnifier.y) + ")"
+          }, magnifierSource)
+        ),
+        h("circle", {
+          key: "magnifier-border",
+          className: "dartboard-magnifier",
+          cx: lensX,
+          cy: lensY,
+          r: lensRadius,
+          fill: "none",
+          stroke: C.accent,
+          strokeWidth: 4,
+          style: { pointerEvents: "none" }
+        }),
+        h("line", {
+          key: "magnifier-crosshair-h",
+          x1: lensX - 11, y1: lensY, x2: lensX + 11, y2: lensY,
+          stroke: "#fff", strokeWidth: 1.6,
+          style: { pointerEvents: "none" }
+        }),
+        h("line", {
+          key: "magnifier-crosshair-v",
+          x1: lensX, y1: lensY - 11, x2: lensX, y2: lensY + 11,
+          stroke: "#fff", strokeWidth: 1.6,
+          style: { pointerEvents: "none" }
+        }),
+        h("circle", {
+          key: "magnifier-crosshair-center",
+          cx: lensX, cy: lensY, r: 2.8,
+          fill: C.accent, stroke: "#fff", strokeWidth: 1,
+          style: { pointerEvents: "none" }
+        })
+      );
+    }
+
     return h("svg", {
+      ref: svgRef,
       viewBox: "0 0 400 400",
       className: "dartboard-svg",
+      role: "application",
+      "aria-label": "Cible de flechettes. Appui long pour activer la loupe de precision.",
+      onPointerDown: handlePointerDown,
+      onPointerMove: handlePointerMove,
+      onPointerUp: handlePointerUp,
+      onPointerCancel: handlePointerCancel,
+      onContextMenu: function(event) { event.preventDefault(); },
       style: {
         width: "100%",
         display: "block",
         margin: "0 auto",
         filter: "drop-shadow(0 6px 24px #000b)",
-        touchAction: "none"
+        touchAction: "none",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        WebkitTouchCallout: "none"
       }
     }, children);
   }
@@ -1934,6 +2107,7 @@
 
   return {
     DartBoard: DartBoard,
+    getDartTargetAtPoint: getDartTargetAtPoint,
     ThrowDots: ThrowDots,
     BustOverlay: BustOverlay,
     ActionButtons: ActionButtons,

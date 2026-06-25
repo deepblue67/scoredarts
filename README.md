@@ -2,7 +2,7 @@
 
 Application web/PWA de comptage de points pour flechettes.
 
-Version actuelle : `V20260618 13H05`
+Version actuelle : `V20260625 16H42`
 
 Cette application permet de jouer principalement aux modes :
 
@@ -134,7 +134,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 13H05";
+var APP_VERSION = "V20260625 16H42";
 ```
 
 Ecrans geres :
@@ -283,6 +283,20 @@ Exemples de `highlightTargets` :
 ["bull"]
 ```
 
+La saisie tactile propose deux gestes complementaires :
+
+- toucher bref : la zone est saisie immediatement comme auparavant
+- appui long de `320 ms` : une loupe de precision apparait au-dessus ou au-dessous du doigt
+- glissement : la loupe suit le doigt et grossit la zone `2,35x`
+- relachement : la zone placee sous le reticule est enregistree
+- annulation du geste : aucune flechette n'est ajoutee
+
+Le calcul de la zone visee est realise par `getDartTargetAtPoint`. Il utilise les
+coordonnees de la cible, la distance au centre et l'angle du pointeur. La saisie
+reste donc fiable meme lorsque la loupe recouvre visuellement une partie de la
+cible. Le menu contextuel et la selection de texte iOS sont desactives sur la
+cible pendant ce geste.
+
 `GameLayout` ajoute aussi une action de confort autour de `DartBoard` :
 
 - une icone loupe `+` permet d'ouvrir la cible en plein ecran
@@ -382,7 +396,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260618 13H05";
+var APP_VERSION = "V20260625 16H42";
 ```
 
 Important :
@@ -851,8 +865,8 @@ Nombre actuel de controles de regression documentes :
 
 - scoring : 8 assertions
 - stockage : 7 assertions
-- UI : 31 checks
-- total : 46 controles
+- UI : 39 checks
+- total : 54 controles
 
 ### Tests De Scoring
 
@@ -930,7 +944,7 @@ Quand une modification fonctionnelle est livree, mettre a jour :
 Exemple :
 
 ```js
-var APP_VERSION = "V20260618 13H05";
+var APP_VERSION = "V20260625 16H42";
 ```
 
 Si la version du service worker ne change pas, GitHub Pages ou le navigateur peuvent continuer a servir une ancienne version depuis le cache.
@@ -1051,6 +1065,17 @@ Actions :
 - actions rapides en bas en paysage
 - ecran portrait iPhone simplifie
 
+### Precision De Saisie
+
+Actions :
+
+- ajout d'une loupe temporaire sur appui long
+- suivi tactile avec reticule de visee
+- calcul geometrique de la zone au relachement
+- conservation du toucher rapide existant
+- fonctionnement partage par les quatre modes et la cible plein ecran
+- prevention du menu contextuel iOS pendant la visee
+
 ## Idees Possibles Pour La Suite
 
 Pistes futures :
@@ -1065,7 +1090,6 @@ Pistes futures :
   - checkout rates/reussis
 - ajouter des profils joueurs persistants
 - ajouter un bouton d'export/import de donnees
-- ajouter un mode plein ecran
 - convertir un jour vers Vite/React moderne si le projet grossit beaucoup
 
 ## Reprise Rapide Pour Codex
@@ -1146,12 +1170,12 @@ Statuts utilises :
 | Scoring pur | Creation de `DartsScoring` pour isoler les calculs 01 et Cricket de l'UI. | Fait | Haute | `scoring.js` |
 | Service Worker | Cache PWA versionne, precache des fichiers, activation de mise a jour via `SKIP_WAITING`. | Fait | Haute | `sw.js` |
 | Manifest PWA | Ajout de `manifest.json`, icones et compatibilite installation mobile. | Fait | Haute | `assets/` + `manifest.json` |
-| Gestion versions | Synchronisation de `APP_VERSION` dans `app.js`, `sw.js` et README. | Fait | Haute | Derniere version : `V20260618 13H05` |
+| Gestion versions | Synchronisation de `APP_VERSION` dans `app.js`, `sw.js` et README. | Fait | Haute | Derniere version : `V20260625 16H42` |
 | Tests scoring | Regression scoring pour 01 et Cricket. | Fait | Haute | 8 assertions |
 | Tests stockage | Regression stockage pour sauvegardes anciennes, wrapping, schema et suppression. | Fait | Haute | 7 assertions |
-| Tests UI | Regression de presence des composants `DartsUI`. | Fait | Haute | 31 checks |
+| Tests UI | Regression des composants `DartsUI`, du calcul geometrique de la cible et des gestes de precision. | Fait | Haute | 39 checks |
 | Smoke tests responsive | Verification manuelle/Playwright sur PC, iPhone portrait/paysage, iPad portrait/paysage. | Fait | Haute | A refaire apres gros changements UI |
-| Media queries ciblees | Gestion explicite des 5 contextes : PC, iPhone portrait, iPhone paysage, iPad portrait, iPad paysage. | Fait | Haute | `index.html` |
+| Media queries ciblees | Gestion explicite des 5 contextes : PC, iPhone portrait, iPhone paysage, iPad portrait, iPad paysage. | Fait | Haute | Cible iPhone paysage recadree en `V20260625 16H42` |
 | Icones PWA/UI | Restauration et centralisation d'icones SVG dans `ui.js`, icones PWA dans `assets/`. | Fait | Moyenne | Corrige la perte d'icones mobile |
 | Themes visuels | Selection de 10 themes dans les reglages, stockage via `darts_theme`, compatibilite `true/false`. | Fait | Moyenne | `V20260618 12H05` |
 | Lisibilite themes | Renforcement des bordures, surfaces et textes secondaires sur les 10 themes. | Fait | Haute | `V20260618 13H05` |
@@ -1179,6 +1203,7 @@ Statuts utilises :
 | Checkout conseille | Suggestion de checkout quand le score le permet. | Fait | Haute | Mode 301/501 |
 | Surlignage cible checkout | Surlignage de la zone conseillee sur la cible, par exemple `D20`. | Fait | Haute | Mode 301/501 |
 | Cible agrandie | Loupe `+` pour ouvrir la cible en plein ecran, loupe `-` pour revenir. | Fait | Haute | `V20260618 12H35` |
+| Loupe de precision | Appui long sur la cible, suivi du doigt avec agrandissement et reticule, validation de la zone au relachement. | Fait | Haute | `V20260625 16H42` |
 | Saisie sans loupe | La cible normale reste utilisable comme avant. | Fait | Haute | Aucun changement de regle |
 | Tableau de bord paysage | Layout paysage/PC avec infos a gauche et cible grande a droite. | Fait | Haute | iPhone/iPad paysage + PC |
 | Historique court en partie | Resume des derniers tours disponible dans les layouts larges. | Fait | Moyenne | Utile en dashboard |

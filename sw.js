@@ -1,9 +1,9 @@
 /* ══════════════════════════════════════════════════════════════════
    DARTS APP — Service Worker
-   Version : V20260611 18H30
+   Version : V20260625 16H42
 ══════════════════════════════════════════════════════════════════ */
 
-var APP_VERSION = "V20260618 13H05";
+var APP_VERSION = "V20260625 16H42";
 var CACHE_NAME  = "darts-cache-" + APP_VERSION;
 
 /* Ressources à mettre en cache au premier démarrage */
