@@ -2,7 +2,7 @@
 
 Application web/PWA de comptage de points pour flechettes.
 
-Version actuelle : `V20260625 17H05`
+Version actuelle : `V20260625 17H20`
 
 Cette application permet de jouer principalement aux modes :
 
@@ -134,7 +134,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260625 17H05";
+var APP_VERSION = "V20260625 17H20";
 ```
 
 Ecrans geres :
@@ -308,6 +308,19 @@ cible pendant ce geste.
 - la saisie reste strictement identique : meme `DartBoard`, memes callbacks, memes regles de score
 - cette option est disponible dans les modes `301`, `501`, `Cricket` et `Autour du monde`
 
+`HistoryDrawer` affiche l'historique complet dans l'ordre chronologique :
+
+- premiere manche en haut
+- manche la plus recente en bas
+- un bloc visuel distinct par manche
+- tours des joueurs conserves dans leur ordre de passage
+- compatibilite avec les historiques des parties deja sauvegardees
+
+Le regroupement est produit par `groupHistoryByRound`. Une nouvelle manche est
+detectee lorsque la rotation revient a un joueur place avant ou au meme rang
+que le joueur precedent. Cette logique gere aussi les joueurs qui passent leur
+tour sans ajouter d'entree a l'historique.
+
 ### `scoring.js`
 
 Role :
@@ -400,7 +413,7 @@ Role :
 Version actuelle :
 
 ```js
-var APP_VERSION = "V20260625 17H05";
+var APP_VERSION = "V20260625 17H20";
 ```
 
 Important :
@@ -869,8 +882,8 @@ Nombre actuel de controles de regression documentes :
 
 - scoring : 8 assertions
 - stockage : 7 assertions
-- UI : 39 checks
-- total : 54 controles
+- UI : 44 checks
+- total : 59 controles
 
 ### Tests De Scoring
 
@@ -948,7 +961,7 @@ Quand une modification fonctionnelle est livree, mettre a jour :
 Exemple :
 
 ```js
-var APP_VERSION = "V20260625 17H05";
+var APP_VERSION = "V20260625 17H20";
 ```
 
 Si la version du service worker ne change pas, GitHub Pages ou le navigateur peuvent continuer a servir une ancienne version depuis le cache.
@@ -1082,6 +1095,15 @@ Actions :
 - stabilisation de la loupe sur un seul cote pendant le geste
 - neutralisation de la double saisie generee par le clic tactile post-relachement
 
+### Historique Des Manches
+
+Actions :
+
+- remplacement de l'ordre inverse par un ordre chronologique
+- regroupement des tours dans des blocs `Manche 1`, `Manche 2`, etc.
+- maintien de l'ordre des joueurs a l'interieur de chaque manche
+- prise en charge des tours passes et des anciennes sauvegardes
+
 ## Idees Possibles Pour La Suite
 
 Pistes futures :
@@ -1176,10 +1198,10 @@ Statuts utilises :
 | Scoring pur | Creation de `DartsScoring` pour isoler les calculs 01 et Cricket de l'UI. | Fait | Haute | `scoring.js` |
 | Service Worker | Cache PWA versionne, precache des fichiers, activation de mise a jour via `SKIP_WAITING`. | Fait | Haute | `sw.js` |
 | Manifest PWA | Ajout de `manifest.json`, icones et compatibilite installation mobile. | Fait | Haute | `assets/` + `manifest.json` |
-| Gestion versions | Synchronisation de `APP_VERSION` dans `app.js`, `sw.js` et README. | Fait | Haute | Derniere version : `V20260625 17H05` |
+| Gestion versions | Synchronisation de `APP_VERSION` dans `app.js`, `sw.js` et README. | Fait | Haute | Derniere version : `V20260625 17H20` |
 | Tests scoring | Regression scoring pour 01 et Cricket. | Fait | Haute | 8 assertions |
 | Tests stockage | Regression stockage pour sauvegardes anciennes, wrapping, schema et suppression. | Fait | Haute | 7 assertions |
-| Tests UI | Regression des composants `DartsUI`, du calcul geometrique de la cible et des gestes de precision. | Fait | Haute | 39 checks |
+| Tests UI | Regression des composants `DartsUI`, de la cible, des gestes de precision et du regroupement des manches. | Fait | Haute | 44 checks |
 | Smoke tests responsive | Verification manuelle/Playwright sur PC, iPhone portrait/paysage, iPad portrait/paysage. | Fait | Haute | A refaire apres gros changements UI |
 | Media queries ciblees | Gestion explicite des 5 contextes : PC, iPhone portrait, iPhone paysage, iPad portrait, iPad paysage. | Fait | Haute | Cible iPhone paysage recadree en `V20260625 16H42` |
 | Icones PWA/UI | Restauration et centralisation d'icones SVG dans `ui.js`, icones PWA dans `assets/`. | Fait | Moyenne | Corrige la perte d'icones mobile |
@@ -1213,6 +1235,7 @@ Statuts utilises :
 | Saisie sans loupe | La cible normale reste utilisable comme avant. | Fait | Haute | Aucun changement de regle |
 | Tableau de bord paysage | Layout paysage/PC avec infos a gauche et cible grande a droite. | Fait | Haute | iPhone/iPad paysage + PC |
 | Historique court en partie | Resume des derniers tours disponible dans les layouts larges. | Fait | Moyenne | Utile en dashboard |
+| Historique par manches | Historique complet regroupe par manche, de la plus ancienne en haut a la plus recente en bas. | Fait | Haute | `V20260625 17H20` |
 | Ecran d'accueil | Liste des jeux 301, 501, Cricket, Autour du monde. | Fait | Haute | Bouton clair/sombre retire |
 | Reglages | Acces version, themes, effacement historique, effacement sauvegarde. | Fait | Moyenne | Themes centralises ici |
 | Themes d'humeur | 10 themes visuels selectionnables selon l'envie. | Fait | Moyenne | Lisibilite renforcee ensuite |

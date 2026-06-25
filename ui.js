@@ -812,9 +812,40 @@
     ));
   }
 
+  function groupHistoryByRound(history, teams) {
+    var teamPositions = {};
+    teams.forEach(function(team, index) {
+      teamPositions[team.id] = index;
+    });
+
+    var rounds = [];
+    var currentRound = null;
+    var previousPosition = -1;
+
+    history.forEach(function(entry) {
+      var position = Object.prototype.hasOwnProperty.call(teamPositions, entry.teamId)
+        ? teamPositions[entry.teamId]
+        : previousPosition + 1;
+
+      if (!currentRound || position <= previousPosition) {
+        currentRound = {
+          number: rounds.length + 1,
+          entries: []
+        };
+        rounds.push(currentRound);
+      }
+
+      currentRound.entries.push(entry);
+      previousPosition = position;
+    });
+
+    return rounds;
+  }
+
   function HistoryDrawer(props) {
     var history = props.history, teams = props.teams, onClose = props.onClose, C = props.C;
     var teamColors = props.teamColors || [];
+    var rounds = groupHistoryByRound(history, teams);
     return h("div", {
       style: {
         position: "fixed",
@@ -838,7 +869,7 @@
       onClick: function(event) { event.stopPropagation(); }
     },
       h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } },
-        h("h3", { style: { color: C.text, fontSize: 15, letterSpacing: 2, textTransform: "uppercase" } }, "Historique du tour"),
+        h("h3", { style: { color: C.text, fontSize: 15, letterSpacing: 2, textTransform: "uppercase" } }, "Historique des manches"),
         h("button", {
           onClick: onClose,
           style: { background: "none", border: "none", color: C.muted, fontSize: 22, cursor: "pointer" }
@@ -846,45 +877,70 @@
       ),
       history.length === 0
         ? h("p", { style: { color: C.muted, textAlign: "center", padding: 20 } }, "Aucun tour joue.")
-        : history.slice().reverse().map(function(entry, index) {
-          var teamIndex = -1;
-          for (var k = 0; k < teams.length; k++) {
-            if (teams[k].id === entry.teamId) {
-              teamIndex = k;
-              break;
-            }
-          }
-          var color = teamIndex >= 0 ? teamColors[teamIndex] : C.accent;
-          return h("div", {
-            key: index,
+        : rounds.map(function(round) {
+          return h("section", {
+            key: "round-" + round.number,
             style: {
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "10px 0",
-              borderBottom: "1px solid " + C.border
+              marginBottom: 16,
+              border: "1px solid " + C.border,
+              borderRadius: 10,
+              overflow: "hidden",
+              background: C.card
             }
           },
-            h("div", { style: { width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0 } }),
-            h("div", { style: { flex: 1 } },
-              h("div", { style: { color: color, fontSize: 12, fontWeight: "bold" } }, entry.teamName),
-              h("div", { style: { color: C.muted, fontSize: 11, marginTop: 2 } },
-                entry.throws.map(function(throwItem) { return throwItem.label; }).join(" / ") + (entry.bust ? " BUST" : "")
-              )
-            ),
-            h("div", { style: { textAlign: "right" } },
-              h("div", {
-                style: {
-                  color: entry.bust ? C.red : C.green,
-                  fontSize: 14,
-                  fontWeight: "bold",
-                  fontFamily: "monospace"
+            h("div", {
+              style: {
+                padding: "8px 12px",
+                background: C.inputBg || C.surface,
+                borderBottom: "1px solid " + C.border,
+                color: C.accent,
+                fontSize: 11,
+                fontWeight: "bold",
+                letterSpacing: 1.5,
+                textTransform: "uppercase"
+              }
+            }, "Manche " + round.number),
+            round.entries.map(function(entry, entryIndex) {
+              var teamIndex = -1;
+              for (var k = 0; k < teams.length; k++) {
+                if (teams[k].id === entry.teamId) {
+                  teamIndex = k;
+                  break;
                 }
-              }, entry.bust ? "annule" : entry.total > 0 ? "+" + entry.total : "-"),
-              entry.scoreBefore !== undefined
-                ? h("div", { style: { color: C.muted, fontSize: 11 } }, entry.scoreBefore + " -> " + entry.scoreAfter)
-                : null
-            )
+              }
+              var color = teamIndex >= 0 ? teamColors[teamIndex] : C.accent;
+              return h("div", {
+                key: "round-" + round.number + "-turn-" + entryIndex,
+                style: {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 12px",
+                  borderBottom: entryIndex < round.entries.length - 1 ? "1px solid " + C.border + "88" : "none"
+                }
+              },
+                h("div", { style: { width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0 } }),
+                h("div", { style: { flex: 1, minWidth: 0 } },
+                  h("div", { style: { color: color, fontSize: 12, fontWeight: "bold" } }, entry.teamName),
+                  h("div", { style: { color: C.muted, fontSize: 11, marginTop: 2, overflowWrap: "anywhere" } },
+                    entry.throws.map(function(throwItem) { return throwItem.label; }).join(" / ") + (entry.bust ? " BUST" : "")
+                  )
+                ),
+                h("div", { style: { textAlign: "right", flexShrink: 0 } },
+                  h("div", {
+                    style: {
+                      color: entry.bust ? C.red : C.green,
+                      fontSize: 14,
+                      fontWeight: "bold",
+                      fontFamily: "monospace"
+                    }
+                  }, entry.bust ? "annule" : entry.total > 0 ? "+" + entry.total : "-"),
+                  entry.scoreBefore !== undefined
+                    ? h("div", { style: { color: C.muted, fontSize: 11 } }, entry.scoreBefore + " -> " + entry.scoreAfter)
+                    : null
+                )
+              );
+            })
           );
         })
     ));
@@ -2140,6 +2196,7 @@
     ActionButtons: ActionButtons,
     QuitModal: QuitModal,
     ConfirmModal: ConfirmModal,
+    groupHistoryByRound: groupHistoryByRound,
     HistoryDrawer: HistoryDrawer,
     GameLayout: GameLayout,
     ResumeScreen: ResumeScreen,
